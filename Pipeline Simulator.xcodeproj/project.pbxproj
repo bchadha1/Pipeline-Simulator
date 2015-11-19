@@ -8,6 +8,13 @@
 
 /* Begin PBXBuildFile section */
 		598FE9041BFAF1B900C62100 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 598FE9031BFAF1B900C62100 /* main.cpp */; };
+		598FE9171BFDFD5600C62100 /* cs311.c in Sources */ = {isa = PBXBuildFile; fileRef = 598FE90B1BFDFD5600C62100 /* cs311.c */; };
+		598FE9181BFDFD5600C62100 /* Makefile in Sources */ = {isa = PBXBuildFile; fileRef = 598FE90C1BFDFD5600C62100 /* Makefile */; };
+		598FE9191BFDFD5600C62100 /* parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 598FE90D1BFDFD5600C62100 /* parse.c */; };
+		598FE91A1BFDFD5600C62100 /* run.c in Sources */ = {isa = PBXBuildFile; fileRef = 598FE9101BFDFD5600C62100 /* run.c */; };
+		598FE91B1BFDFD5600C62100 /* double_loop.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 598FE9131BFDFD5600C62100 /* double_loop.o */; };
+		598FE91C1BFDFD5600C62100 /* double_loop.s in Sources */ = {isa = PBXBuildFile; fileRef = 598FE9141BFDFD5600C62100 /* double_loop.s */; };
+		598FE91D1BFDFD5600C62100 /* util.c in Sources */ = {isa = PBXBuildFile; fileRef = 598FE9151BFDFD5600C62100 /* util.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -25,6 +32,17 @@
 /* Begin PBXFileReference section */
 		598FE9001BFAF1B900C62100 /* Pipeline Simulator */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Pipeline Simulator"; sourceTree = BUILT_PRODUCTS_DIR; };
 		598FE9031BFAF1B900C62100 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		598FE90B1BFDFD5600C62100 /* cs311.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cs311.c; sourceTree = "<group>"; };
+		598FE90C1BFDFD5600C62100 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
+		598FE90D1BFDFD5600C62100 /* parse.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = parse.c; sourceTree = "<group>"; };
+		598FE90E1BFDFD5600C62100 /* parse.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = parse.h; sourceTree = "<group>"; };
+		598FE90F1BFDFD5600C62100 /* README */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = README; sourceTree = "<group>"; };
+		598FE9101BFDFD5600C62100 /* run.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = run.c; sourceTree = "<group>"; };
+		598FE9111BFDFD5600C62100 /* run.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = run.h; sourceTree = "<group>"; };
+		598FE9131BFDFD5600C62100 /* double_loop.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = double_loop.o; sourceTree = "<group>"; };
+		598FE9141BFDFD5600C62100 /* double_loop.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; path = double_loop.s; sourceTree = "<group>"; };
+		598FE9151BFDFD5600C62100 /* util.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = util.c; sourceTree = "<group>"; };
+		598FE9161BFDFD5600C62100 /* util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = util.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -32,6 +50,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				598FE91B1BFDFD5600C62100 /* double_loop.o in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -57,9 +76,36 @@
 		598FE9021BFAF1B900C62100 /* Pipeline Simulator */ = {
 			isa = PBXGroup;
 			children = (
+				598FE90A1BFDFD5600C62100 /* lab2_complete */,
 				598FE9031BFAF1B900C62100 /* main.cpp */,
 			);
 			path = "Pipeline Simulator";
+			sourceTree = "<group>";
+		};
+		598FE90A1BFDFD5600C62100 /* lab2_complete */ = {
+			isa = PBXGroup;
+			children = (
+				598FE90B1BFDFD5600C62100 /* cs311.c */,
+				598FE90C1BFDFD5600C62100 /* Makefile */,
+				598FE90D1BFDFD5600C62100 /* parse.c */,
+				598FE90E1BFDFD5600C62100 /* parse.h */,
+				598FE90F1BFDFD5600C62100 /* README */,
+				598FE9101BFDFD5600C62100 /* run.c */,
+				598FE9111BFDFD5600C62100 /* run.h */,
+				598FE9121BFDFD5600C62100 /* sample_input */,
+				598FE9151BFDFD5600C62100 /* util.c */,
+				598FE9161BFDFD5600C62100 /* util.h */,
+			);
+			path = lab2_complete;
+			sourceTree = "<group>";
+		};
+		598FE9121BFDFD5600C62100 /* sample_input */ = {
+			isa = PBXGroup;
+			children = (
+				598FE9131BFDFD5600C62100 /* double_loop.o */,
+				598FE9141BFDFD5600C62100 /* double_loop.s */,
+			);
+			path = sample_input;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -118,7 +164,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				598FE91C1BFDFD5600C62100 /* double_loop.s in Sources */,
+				598FE9181BFDFD5600C62100 /* Makefile in Sources */,
+				598FE91D1BFDFD5600C62100 /* util.c in Sources */,
 				598FE9041BFAF1B900C62100 /* main.cpp in Sources */,
+				598FE9171BFDFD5600C62100 /* cs311.c in Sources */,
+				598FE91A1BFDFD5600C62100 /* run.c in Sources */,
+				598FE9191BFDFD5600C62100 /* parse.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -237,6 +289,7 @@
 				598FE9091BFAF1B900C62100 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
