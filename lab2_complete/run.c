@@ -32,6 +32,152 @@ instruction* get_inst_info(uint32_t pc)
 /*                                                             */
 /***************************************************************/
 void process_instruction(){
+    CPU_State new_CPU_STATE;
+    
+    process_IF();
+    process_ID();
+    process_EX();
+    process_MEM();
+    process_WB();
+    
+    CURRENT_STATE = TEMP_STATE;
+}
+
+
+
+
+/*
+ Assumes PC is updated
+ 
+ */
+
+void process_IF() {
+    IF_ID_pipeline_buffer.NPC = CURRENT_STATE.PC;
+    instruction *inst;
+    inst = get_inst_info(CURRENT_STATE.PC);
+    
+}
+
+
+
+/**************************************************************
+ input :    IF/ID.REG1
+            IF/ID.REG2
+            MEM/WB.WriteReg
+            WB/.WriteData
+ 
+ output:
+ **************************************************************/
+void process_ID(){
+    
+}
+
+void process_EX(){
+    ID/EX prevID_EX_pipeline = CURRENT_STATE.ID_EX_pipeline;
+    
+    // shift the pipelined control signals
+    EX_MEM_pipeline_buffer.WB_MemToReg = prevID_EX_pipeline.WB_MemToReg;
+    EX_MEM_pipeline_buffer.WB_RegToWrite = prevID_EX_pipeline.WB_RegToWrite;
+    
+    EX_MEM_pipeline_buffer.MemWrite = prevID_EX_pipeline.MEM_MemWrite;
+    EX_MEM_pipeline_buffer.MemRead = prevID_EX_pipeline.MEM_MemRead;
+    EX_MEM_pipeline_buffer.Branch = prevID_EX_pipeline.MEM_Branch;
+    
+    // PC (for J and JR instruction)
+    EX_MEM_pipeline_buffer.NPC = prevID_EX_pipeline.NPC + (prevID_EX_pipeline.IMM << 2);
+    
+    // select ALU input
+    uint32_t ALUinput1 = prevID_EX_pipeline.data1;
+    uint32_t ALUinput2;
+    
+    // if ALUSrc == 1, the second ALU operand is the sign-extended, lower 16 bits of the instruction.
+    // if ALUSrc == 0, the second ALU operand comes from the second register file output. (Read data 2).
+    if (prevID_EX_pipeline.ALUSrc) {
+        ALUinput2 = prevID_EX_pipeline.IMM;
+    } else {         ALUinput2 = prevID_EX_pipeline.data2;
+    }
+    
+    // transfer data2
+    EX_MEM_pipeline_buffer.data2 = prevID_EX_pipeline.data2;
+    
+    // calculate ALU control
+    int funct_field = (prevID_EX_pipeline.IMM & 63); // extract funct field from instruction[0~15]
+    int control_line = ALU_control(funct_field, prevID_EX_pipeline.ALUOp0, prevID_EX_pipeline.ALUOp1);
+    
+    // process ALU
+    uint32_t ALUresult = ALU(control_line, ALUinput1, ALUinput2);
+    EX_MEM_pipeline_buffer.zero = !ALUresult;
+    EX_MEM_pipeline_buffer.ALU_OUT = ALUresult;
+    
+    // Mux for Write Register
+    // if RegDst == 1, the register destination number for the Write register comes from the rd field.(bits 15:11)
+    // if RegDst == 0, the register destination number for the Write register comes from the rt field.(bits 20:16)
+    if (prevID_EX_pipeline.RegDst) {
+        EX_MEM_pipeline_buffer.RegDstNum = prevID_EX_pipeline.inst11_15;
+    } else {
+        EX_MEM_pipeline_buffer.RegDstNum = prevID_EX_pipeline.inst16_20;
+    }
+    
+}
+
+void process_MEM(){
+    
+}
+
+void process_WB(){
+    
+}
+
+
+uint32_t ALU(int control_line, uint32_t data1, uint32_t data2)) {
+    if (control_line == 0) {        // 0000 : AND
+        return data1 & data2;
+    } else if (control_line == 1) { // 0001 : OR
+        return data1 | data2;
+    } else if (control_line == 2) { // 0010 : add
+        return data1 + data2;
+    } else if (control_line == 6) { // 0110 : subtract
+        return data1 - data2;
+    } else if (control_line == 7) { // 0111 : set on less than
+        return data1 < data2;
+    } else if (control_line == 12) { // 1100 : NOR
+        return
+    } else {
+        printf("Error in ALU. ALU control line value is : %d", control_line);
+    }
+}
+
+// outputs ALU control line (textbook page 247)
+int ALU_control(int funct_field, bool ALUOp0, bool ALUOp1) {
+    if (ALUOp0 == 0 && ALUOp1 == 0) {
+        return 2;                                               // 0010
+    } else if (ALUOp0 == 1) {
+        return 6;                                               // 0110
+    } else { // ALUOp1 = 1
+        funct_field = funct_field & 15; // mask last 4 digits
+        if (funct_field == 0) {
+            return 2;                                           // 0010
+        } else if (funct_field == 2) {
+            return 6;                                           // 0110
+        } else if (funct_field == 4) {
+            return 0;                                           // 0000
+        } else if (funct_field == 5) {
+            return 1;                                           // 0001
+        } else if (funct_field == 10) {
+            return 7;                                           // 0111
+        } else {
+            printf("Error in ALU_control. func_field value is %d", funct_field);
+        }
+    }
+}
+
+
+
+
+
+
+#ifdef ORIGINAL
+void process_instruction(){
     instruction *inst;
     int i;		// for loop
 
@@ -156,3 +302,4 @@ void process_instruction(){
     if (CURRENT_STATE.PC < MEM_REGIONS[0].start || CURRENT_STATE.PC >= (MEM_REGIONS[0].start + (NUM_INST * 4)))
 	RUN_BIT = FALSE;
 }
+#endif
