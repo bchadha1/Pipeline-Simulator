@@ -176,8 +176,8 @@ void mem_write_32(uint32_t address, uint32_t value)
 /* Purpose   : Execute a cycle                                 */
 /*                                                             */
 /***************************************************************/
-void cycle() {                                                
-    process_instruction();
+void cycle(bool forwardingEnabled) {
+    process_instruction(bool forwardingEnabled);
     INSTRUCTION_COUNT++;
 }
 
@@ -188,7 +188,7 @@ void cycle() {
 /* Purpose   : Simulate MIPS for n cycles                      */
 /*                                                             */
 /***************************************************************/
-void run(int num_cycles) {
+void run(int num_cycles, bool forwardingEnabled) {
     int i;
 
     if (RUN_BIT == FALSE) {
@@ -202,7 +202,7 @@ void run(int num_cycles) {
 	    printf("Simulator halted\n\n");
 	    break;
 	}
-	cycle();
+	cycle(bool forwardingEnabled);
     }
 }
 
@@ -213,7 +213,7 @@ void run(int num_cycles) {
 /* Purpose   : Simulate MIPS until HALTed                      */
 /*                                                             */
 /***************************************************************/
-void go() {
+void go(bool forwardingEnabled) {
     if (RUN_BIT == FALSE) {
 	printf("Can't simulate, Simulator is halted\n\n");
 	return;
@@ -221,7 +221,7 @@ void go() {
 
     printf("Simulating...\n\n");
     while (RUN_BIT)
-	cycle();
+	cycle(forwardingEnabled);
     printf("Simulator halted\n\n");
 }
 

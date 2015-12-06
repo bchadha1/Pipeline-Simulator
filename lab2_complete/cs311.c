@@ -123,11 +123,14 @@ int main(int argc, char *argv[]) {
     int debug_set = 0;
     int num_inst_set = 0;
     int pipe_dump_set = 0;
+    
+    bool forwardingEnabled = false;
+    bool branchPredictionEnabled = true;
 
     /* Error Checking */
     if (argc < 2)
     {
-	printf("Error: usage: %s [-m addr1:addr2] [-d] [-n num_instr] inputBinary\n", argv[0]);
+	printf("Error: usage: %s [-nobp] [-f] [-m addr1:addr2] [-d] [-n num_instr] inputBinary\n", argv[0]);
 	exit(1);
     }
 
@@ -137,7 +140,14 @@ int main(int argc, char *argv[]) {
     //print_parse_result();
 
     while(count != argc-1){
-	if(strcmp(argv[count], "-m") == 0){
+    
+    if (strcmp(argv[count], "-nobp")) {
+        branchPredictionEnabled = false;
+    }
+    else if (strcmp(argv[count], "-f")) {
+        forwardingEnabled = true;
+    }
+	else if(strcmp(argv[count], "-m") == 0){
 	    tokens = str_split(argv[++count],':');
 
 	    addr1 = (int)strtol(*(tokens), NULL, 16);
@@ -154,7 +164,7 @@ int main(int argc, char *argv[]) {
 	    pipe_dump_set = 1;
 	else{
 	    printf("Error: usage: %s [-nobp] [-f] [-m addr1:addr2] [-d] [-p] [-n num_instr] inputBinary\n", argv[0]);
-	    //You must add nobp and f option yourself
+	    //You must add nobp and f option yourself - done
 	    exit(1);
 	}
 	count++;
@@ -170,7 +180,7 @@ int main(int argc, char *argv[]) {
 	    	printf("Simulator halted\n\n");
 		break;
 	    }
-	    cycle();
+	    cycle(forwardingEnabled);
 
 	    if(pipe_dump_set) pdump();
 	    rdump();	
@@ -178,7 +188,7 @@ int main(int argc, char *argv[]) {
 	}
     }
     else{
-	run(i);
+	run(i, forwardingEnabled);
 	rdump();
 
 	if(mem_dump_set) mdump(addr1, addr2);

@@ -35,7 +35,7 @@ typedef struct IF/ID_Struct {
     uint32_t NPC;
     
     // reg
-    uint32_t instr;
+    instruction *instr;
     
     
 } IF/ID;
@@ -59,8 +59,8 @@ typedef struct ID/EX_Struct {
     
     
     // reg
-    uint32_t REG1;
-    uint32_t REG2;
+    uint32_t REG1;      // rs
+    uint32_t REG2;      // rt
     uint32_t IMM; // immediate value
     
     uint32_t inst16_20;
@@ -86,7 +86,7 @@ typedef struct EX/MEM_Struct {
     bool zero;
     uint32_t ALU_OUT;
     uint32_t data2;             // untouched data2 from register.
-    uint32_t RegDstNum;       // 5 bit Register destination (if write)
+    uint32_t RegDstNum;         // 5 bit Register destination (if write)
     
 } EX/MEM;
 
@@ -99,6 +99,7 @@ typedef struct MEM/WB_Struct {
     uint32_t Mem_OUT;
     uint32_t ALU_OUT;
     
+    uint32_t RegDstNum;         // 5 bit Register destination (if write)
     
 } MEM/WB;
 

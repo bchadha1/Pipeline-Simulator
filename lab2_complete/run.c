@@ -31,12 +31,12 @@ instruction* get_inst_info(uint32_t pc)
 /* Purpose: Process one instrction                             */
 /*                                                             */
 /***************************************************************/
-void process_instruction(){
+void process_instruction(bool forwardingEnabled){
     CPU_State new_CPU_STATE;
     
     process_IF();
     process_ID();
-    process_EX();
+    process_EX(forwardingEnabled);
     process_MEM();
     process_WB();
     
@@ -52,10 +52,12 @@ void process_instruction(){
  */
 
 void process_IF() {
-    IF_ID_pipeline_buffer.NPC = CURRENT_STATE.PC;
-    instruction *inst;
-    inst = get_inst_info(CURRENT_STATE.PC);
+    // PC
+    IF_ID_pipeline_buffer.NPC = CURRENT_STATE.PC + 4;
     
+    // Instruction Fetch
+    instruction *inst = get_inst_info(CURRENT_STATE.PC);;
+    IF_ID_pipeline_buffer.instr = inst; // both are pointers
 }
 
 
@@ -69,10 +71,30 @@ void process_IF() {
  output:
  **************************************************************/
 void process_ID(){
+    IF/ID prevIF_ID_pipeline = CURRENT_STATE.IF_ID_pipeline;
+    instruction *inst = prevIF_ID_pipeline.instr;
+    
+    // TODO : control signals
+    // 
+    //
+    
+    
+    // Read register rs and rt
+    ID_EX_pipeline_buffer.REG1 = CURRENT_STATE.REGS[RS(inst)];
+    ID_EX_pipeline_buffer.Reg2 = CURRENT_STATE.REGS[RT(inst)];
+
+    // sign-extend Immediate value
+    ID_EX_pipeline_buffer.IMM = SIGN_EX(IMM(inst));
+    
+    // transfer possible register write destinations (11-15 and 16-20)
+    ID_EX_pipeline_buffer.inst11_15 = RD(inst); // 11-15
+    ID_EX_pipeline_buffer.inst16_20 = RT(inst); // 16-20
     
 }
 
-void process_EX(){
+void process_EX(bool forwardingEnabled){
+    
+    
     ID/EX prevID_EX_pipeline = CURRENT_STATE.ID_EX_pipeline;
     
     // shift the pipelined control signals
@@ -84,17 +106,96 @@ void process_EX(){
     EX_MEM_pipeline_buffer.Branch = prevID_EX_pipeline.MEM_Branch;
     
     // PC (for J and JR instruction)
-    EX_MEM_pipeline_buffer.NPC = prevID_EX_pipeline.NPC + (prevID_EX_pipeline.IMM << 2);
+    //EX_MEM_pipeline_buffer.NPC = prevID_EX_pipeline.NPC + (prevID_EX_pipeline.IMM << 2);
     
+    int forwardA = 00;
+    int forwardB = 00;
+    
+    // Forwarding unit.
+    // EX hazard
+    if (forwardingEnabled) {
+        
+    
+    if (CURRENT_STATE.EX_MEM_pipeline.RegWrite) {
+        if (CURRENT_STATE.EX_MEM_pipeline.RegDstNum != 0) {
+            if (CURRENT_STATE.EX_MEM_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.REG1) {
+                forwardA = 10;
+            }
+            if (CURRENT_STATE.EX_MEM_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.REG2) {
+                forwardB = 10;
+            }
+        }
+    }
+    
+    // MEM hazard
+    if (CURRENT_STATE.MEM_WB_pipeline.RegWrite) {
+        if (CURRENT_STATE.MEM_WB_pipeline.RegDstNum != 0) {
+            if !(CURRENT_STATE.EX_MEM_pipeline.RegWrite && (CURRENT_STATE.EX_MEM_pipeline.RegDstNum !=0) && (CURRENT_STATE.EX_MEM_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.REG1)) {
+                
+                if (CURRENT_STATE.MEM_WB_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.REG1) {
+                    forwardA = 01;
+                }
+            }
+            
+            if !(CURRENT_STATE.EX_MEM_pipeline.RegWrite && (CURRENT_STATE.EX_MEM_pipeline.RegDstNum !=0) && (CURRENT_STATE.EX_MEM_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.REG2)) {
+                
+                if (CURRENT_STATE.MEM_WB_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.REG2) {
+                    forwardB = 01;
+                }
+            }
+        }
+    }
+    
+    } // end of "forwardingEnabled"
+    
+    
+        
+    // For this section, refer to figure 4.57 !!! Other figures are wrong!
     // select ALU input
-    uint32_t ALUinput1 = prevID_EX_pipeline.data1;
+    uint32_t ALUinput1;
     uint32_t ALUinput2;
     
+    // 3 to 1 MUX
+    if (forwardA == 00) {
+        ALUinput1 = prevID_EX_pipeline.data1;
+    } else if (forwardA == 10) {
+        ALUinput1 = CURRENT_STATE.EX_MEM_pipeline.ALU_OUT;
+    } else if (forwardA == 01) {
+        // MUX for which data to write.
+        uint32_t writeData;
+        if (CURRENT_STATE.MEM_WB_pipeline.MemToReg) {
+            writeData = CURRENT_STATE.MEM_WB_pipeline.Mem_OUT;
+        } else {
+            writeData = CURRENT_STATE.MEM_WB_pipeline.ALU_OUT;
+        }
+        ALUinput1 = writeData;
+    } else {
+        printf("unrecognized fowardA signal : %d", fowardA);
+    }
+    
+    // 3 to 1 MUX
+    if (forwardB == 00) {
+        ALUinput2 = prevID_EX_pipeline.data2;
+    } else if (forwardB == 10) {
+        ALUinput2 = CURRENT_STATE.EX_MEM_pipeline.ALU_OUT;
+    } else if (forwardB == 01){
+        // MUX for which data to write.
+        uint32_t writeData;
+        if (CURRENT_STATE.MEM_WB_pipeline.MemToReg) {
+            writeData = CURRENT_STATE.MEM_WB_pipeline.Mem_OUT;
+        } else {
+            writeData = CURRENT_STATE.MEM_WB_pipeline.ALU_OUT;
+        }
+        ALUinput2 = writeData;
+    } else {
+        printf("unrecognized fowardB signal : %d", fowardB);
+    }
+    
+    // Another MUX inside
     // if ALUSrc == 1, the second ALU operand is the sign-extended, lower 16 bits of the instruction.
     // if ALUSrc == 0, the second ALU operand comes from the second register file output. (Read data 2).
     if (prevID_EX_pipeline.ALUSrc) {
         ALUinput2 = prevID_EX_pipeline.IMM;
-    } else {         ALUinput2 = prevID_EX_pipeline.data2;
     }
     
     // transfer data2
@@ -121,10 +222,44 @@ void process_EX(){
 }
 
 void process_MEM(){
+    EX/MEM prevEX_MEM_pipeline = CURRENT_STATE.EX_MEM_pipeline;
+    
+    // shift the pipelined control signals
+    MEM_WB_pipeline_buffer.MemToReg = prevEX_MEM_pipeline.WB_MemToReg;
+    MEM_WB_pipeline_buffer.RegWrite = prevID_EX_pipeline.WB_RegToWrite;
+    
+    // Read data from memory
+    if (prevID_EX_pipeline.MemRead) {
+        MEM_WB_pipeline_buffer.Mem_OUT = mem_read_32(prevID_EX_pipeline.ALU_OUT);
+    } else {
+        MEM_WB_pipeline_buffer.ALU_OUT = prevID_EX_pipeline.ALU_OUT;
+    }
+    
+    // Write data to memory
+    if (prevID_EX_pipeline.MemWrite) {
+        mem_write_32(prevID_EX_pipeline.ALU_OUT, prevID_EX_pipeline.data2);
+    }
+    
+    // shift Register destination number (on write)
+    MEM_WB_pipeline_buffer.RegDstNum = prevID_EX_pipeline.RegDstNum;
     
 }
 
 void process_WB(){
+    MEM/WB prevMEM_WB_pipeline = CURRENT_STATE.MEM_WB_pipeline;
+    
+    // MUX for which data to write.
+    uint32_t writeData;
+    if (prevMEM_WB_pipeline.MemToReg) {
+        writeData = prevMEM_WB_pipeline.Mem_OUT;
+    } else {
+        writeData = prevMEM_WB_pipeline.ALU_OUT;
+    }
+    
+    // Write data if (RegWrite == 1)
+    if (prevMEM_WB_pipeline.RegWrite) {
+        CURRENT_STATE.REGS[prevMEM_WB_pipeline.RegDstNum] = writeData;
+    }
     
 }
 
