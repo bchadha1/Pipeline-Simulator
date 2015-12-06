@@ -40,7 +40,9 @@ void process_instruction(bool forwardingEnabled){
     process_MEM();
     process_WB();
     
-    CURRENT_STATE = TEMP_STATE;
+    
+    // *TODO*
+    // buffer -> Current CPU state
 }
 
 
@@ -75,7 +77,7 @@ void process_ID(){
     instruction *inst = prevIF_ID_pipeline.instr;
     
     // TODO : control signals
-    // 
+    //
     //
     
     
