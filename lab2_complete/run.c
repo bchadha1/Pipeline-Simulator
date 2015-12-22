@@ -33,14 +33,16 @@ uint32_t* get_inst_info(uint32_t pc)
 /***************************************************************/
 void process_instruction(bool forwardingEnabled){
     
+    
     process_IF();
     process_ID();
     process_EX(forwardingEnabled);
-    process_MEM();
+    process_MEM(forwardingEnabled);
     process_WB();
     
     
     // buffer -> Current CPU state
+    
     CURRENT_STATE.IF_ID_pipeline = IF_ID_pipeline_buffer;
     CURRENT_STATE.ID_EX_pipeline = ID_EX_pipeline_buffer;
     CURRENT_STATE.EX_MEM_pipeline = EX_MEM_pipeline_buffer;
@@ -79,14 +81,15 @@ void process_ID(){
     IF/ID prevIF_ID_pipeline = CURRENT_STATE.IF_ID_pipeline;
     uint32_t inst = prevIF_ID_pipeline.instr;
     
-    // TODO : control signals
+    // control signals
     generate_control_signals(inst);
+    
     
     
     
     // Read register rs and rt
     ID_EX_pipeline_buffer.REG1 = CURRENT_STATE.REGS[RS(inst)];
-    ID_EX_pipeline_buffer.Reg2 = CURRENT_STATE.REGS[RT(inst)];
+    ID_EX_pipeline_buffer.REG2 = CURRENT_STATE.REGS[RT(inst)];
 
     // sign-extend Immediate value
     ID_EX_pipeline_buffer.IMM = SIGN_EX(IMM(inst));
@@ -95,11 +98,20 @@ void process_ID(){
     ID_EX_pipeline_buffer.inst11_15 = RD(inst); // 11-15
     ID_EX_pipeline_buffer.inst16_20 = RT(inst); // 16-20
     
+    if (globaljal) {
+        ID_EX_pipeline_buffer.REG1 = 0;
+        ID_EX_pipeline_buffer.REG2 = 0;
+        ID_EX_pipeline_buffer.IMM = CURRENT_STATE.PC+4;
+        ID_EX_pipeline_buffer.inst11_15 = 31;
+    }
+    
 }
 
 
 void generate_control_signals(uint32_t instr){
     bool jump = false;
+    bool jal = false;
+    bool jumpandreturn = false;
     
     if (OPCODE(instr) == 0) {                               // R-type
         ID_EX_pipeline_buffer.RegDst = 1;
@@ -119,6 +131,7 @@ void generate_control_signals(uint32_t instr){
                 break;
             case 0x08:                          // jr
                 jump = true;
+                jumpandreturn = true;
                 // dont care
                 break;
             case 0x27:                          // nor
@@ -151,10 +164,14 @@ void generate_control_signals(uint32_t instr){
         ID_EX_pipeline_buffer.WB_RegWrite = 0;
     } else if (OPCODE(instr) == 3){             // jal
         jump = true;
+        ID_EX_pipeline_buffer.RegDst = 1;
+        ID_EX_pipeline_buffer.ALUControl = 0;
+        ID_EX_pipeline_buffer.ALUSrc = 1;
         ID_EX_pipeline_buffer.MEM_MemRead = 0;
         ID_EX_pipeline_buffer.MEM_MemWrite = 0;
         ID_EX_pipeline_buffer.WB_RegWrite = 1;
         ID_EX_pipeline_buffer.WB_MemToReg = 0;
+        jal = true;
         
                                                             // I-type
     } else if (OPCODE(instr) == 0x23){          // lw
@@ -250,10 +267,22 @@ void generate_control_signals(uint32_t instr){
         // *TO DO*
         // DO FLUSH
         
-        // set jump buffer
-        ID_EX_pipeline_buffer.jump = true;
+        // set jump varibale
+        globaljump = true;
     } else {
-        ID_EX_pipeline_buffer.jump = false;
+        globaljump = false;
+    }
+    
+    if (jal) {
+        globaljal = true;
+    } else {
+        globaljal = false;
+    }
+    
+    if (jumpandreturn) {
+        globalJumpAndReturn = true;
+    } else {
+        globalJumpAndReturn = false;
     }
     
 }
@@ -281,10 +310,6 @@ void process_EX(bool forwardingEnabled){
     
     // PC (for J and JR instruction)
     EX_MEM_pipeline_buffer.NPC = prevID_EX_pipeline.NPC + (prevID_EX_pipeline.IMM << 2);
-    
-    if (prevID_EX_pipeline.jump) {
-        <#statements#>
-    }
     
     int forwardA = 00;
     int forwardB = 00;
@@ -408,11 +433,23 @@ void process_MEM(bool forwardingEnabled){
     MEM_WB_pipeline_buffer.MemRead = prevEX_MEM_pipeline.MemRead;
     
     // branching
-    if (prevEX_MEM_pipeline.zero & prevEX_MEM_pipeline.Branch) {
-        CURRENT_STATE.PC = prevEX_MEM_pipeline.NPC;
+    uint32_t inst = prevIF_ID_pipeline.instr;
+    
+    if (jump) {
+        CURRENT_STATE.PC = ((CURRENT_STATE.PC+4)&0xF0000000) + (J250(inst)<<2);
+        if (globalJumpAndReturn) {
+            CURRENT_STATE.PC = CURRENT_STATE.REGS[31];
+        }
+        
     } else {
-        CURRENT_STATE.PC += 4;
+        if (prevEX_MEM_pipeline.zero & prevEX_MEM_pipeline.Branch) {
+            CURRENT_STATE.PC = prevEX_MEM_pipeline.NPC;
+        } else {
+            CURRENT_STATE.PC += 4;
+        }
     }
+    
+    
     
     
     

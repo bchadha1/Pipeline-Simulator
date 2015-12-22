@@ -38,6 +38,7 @@
 #define RS(INST)        (INST & 0x03E00000)>>20
 #define OPCODE(INST)    (INST & 0xFC000000)>>25
 #define IMM(INST)       (INST & 0x0000FFFF)
+#define J250(INST)      (INST & 0x03FFFFFF)
 
 
 
@@ -146,6 +147,10 @@ extern IF/ID IF_ID_pipeline_buffer;
 extern ID/EX ID_EX_pipeline_buffer;
 extern EX/MEM EX_MEM_pipeline_buffer;
 extern MEM/WB MEM_WB_pipeline_buffer;
+bool globaljump;
+bool globaljal;
+bool globalJumpAndReturn
+
 
 /* For Instructions */
 extern instruction *INST_INFO;
