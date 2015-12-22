@@ -16,7 +16,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include "run.h"
+
 
 #define FALSE 0
 #define TRUE  1
@@ -148,16 +148,16 @@ typedef struct {
 extern CPU_State CURRENT_STATE;
 
 /* Pipelines */
-extern IF_ID IF_ID_pipeline_buffer;
-extern ID_EX ID_EX_pipeline_buffer;
-extern EX_MEM EX_MEM_pipeline_buffer;
-extern MEM_WB MEM_WB_pipeline_buffer;
-extern bool globaljump;
-extern bool globaljal;
-extern bool globalJumpAndReturn;
-extern uint32_t PC_buffer;
-extern int stallcount;
-extern int stallcount2;
+IF_ID IF_ID_pipeline_buffer;
+ID_EX ID_EX_pipeline_buffer;
+EX_MEM EX_MEM_pipeline_buffer;
+MEM_WB MEM_WB_pipeline_buffer;
+bool globaljump;
+bool globaljal;
+bool globalJumpAndReturn;
+uint32_t PC_buffer;
+int stallcount;
+int stallcount2;
 
 
 /* For Instructions */
@@ -176,7 +176,6 @@ char**		str_split(char *a_str, const char a_delim);
 int		fromBinary(char *s);
 uint32_t	mem_read_32(uint32_t address);
 void		mem_write_32(uint32_t address, uint32_t value);
-void		cycle(bool forwardingEnabled);
 void		run(int num_cycles, bool forwardingEnabled);
 void		go(bool forwardingEnabled);
 void		mdump(int start, int stop);
