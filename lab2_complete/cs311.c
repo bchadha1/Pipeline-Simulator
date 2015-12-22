@@ -69,12 +69,13 @@ void load_program(char *program_filename) {
 
 	else
 	{
-        /*
+        
 	    if(ii < text_size){
-		INST_INFO[text_index++] = parsing_instr(buffer, ii);
+            // INST_INFO[text_index++] = strtol(buffer,NULL,2);
+            INST_INFO[text_index++] = strtol(buffer,NULL,2);
 	    }
 	    else if(ii < text_size + data_size){
-		parsing_data(buffer, ii-text_size);
+            parsing_data(buffer, ii-text_size);
 	    }
 	    else
 	    {
@@ -82,7 +83,7 @@ void load_program(char *program_filename) {
 		//assert(0);
 		//However, there is a newline in the input file
 	    }
-         */
+         
 	    ii += 4;
 	}
 	flag++;
@@ -189,6 +190,7 @@ int main(int argc, char *argv[]) {
 	    //rdump();
 	    //if(mem_dump_set) mdump(addr1, addr2);
 	}
+        mdump(addr1, addr2);
     }
     else{
 	run(i, forwardingEnabled);

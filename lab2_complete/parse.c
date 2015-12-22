@@ -17,7 +17,7 @@ int data_size;
 
 
 
-void parsing_data(const char *buffer, const int index)
+void parsing_data(char *buffer, const int index)
 {
     uint32_t word;
     word = fromBinary(buffer);
