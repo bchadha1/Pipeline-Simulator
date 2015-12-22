@@ -30,12 +30,24 @@
 
 
 
+// instruction information extracting macros
+#define FUNCT(INST)     (INST & 0x0000001F)
+#define SHAMT(INST)     (INST & 0x000007C0)>>5
+#define RD(INST)        (INST & 0x0000F800)>>10
+#define RT(INST)        (INST & 0x001F0000)>>15
+#define RS(INST)        (INST & 0x03E00000)>>20
+#define OPCODE(INST)    (INST & 0xFC000000)>>25
+#define IMM(INST)       (INST & 0x0000FFFF)
+
+
+
+
 typedef struct IF/ID_Struct {
     // PC
     uint32_t NPC;
     
     // reg
-    instruction *instr;
+    uint32_t instr;
     
     
 } IF/ID;

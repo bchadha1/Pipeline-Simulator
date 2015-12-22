@@ -77,11 +77,11 @@ void process_IF() {
  **************************************************************/
 void process_ID(){
     IF/ID prevIF_ID_pipeline = CURRENT_STATE.IF_ID_pipeline;
-    uint32_t *inst = prevIF_ID_pipeline.instr;
+    uint32_t inst = prevIF_ID_pipeline.instr;
     
     // TODO : control signals
-    //
-    //
+    generate_control_signals(inst);
+    
     
     
     // Read register rs and rt
@@ -96,6 +96,53 @@ void process_ID(){
     ID_EX_pipeline_buffer.inst16_20 = RT(inst); // 16-20
     
 }
+
+
+void generate_control_signals(uint32_t instr){
+    if (OPCODE(instr) == 0) {               // R-type
+        switch (FUNCT(instr)) {
+            case 0x21:                          // addu
+                
+                break;
+            case 0x24:                          // and
+                
+                break;
+            case 0x08:                          // jr
+                
+                break;
+            case 0x27:                          // nor
+                
+                break;
+            case 0x25:                          // or
+                
+                break;
+            case 0x2b:                          // sltu
+                
+                break;
+            case 0x00:                          // sll
+                
+                break;
+            case 0x02:                          // srl
+                
+                break;
+            case 0x23:                          // subu
+                
+                break;
+                
+            default:
+                printf("Unrecognized input in 'generate_control_signals' with input : %d", instr);
+                break;
+        }
+    }
+}
+
+
+
+
+
+
+
+
 
 void process_EX(bool forwardingEnabled){
     
@@ -268,25 +315,35 @@ void process_WB(){
     
 }
 
-
+// control line ranges from 0 to 10 (4digits)
 uint32_t ALU(int control_line, uint32_t data1, uint32_t data2)) {
-    if (control_line == 0) {        // 0000 : AND
-        return data1 & data2;
-    } else if (control_line == 1) { // 0001 : OR
-        return data1 | data2;
-    } else if (control_line == 2) { // 0010 : add
+    if (control_line == 0) {        // 0000 : add
         return data1 + data2;
-    } else if (control_line == 6) { // 0110 : subtract
+    } else if (control_line == 1) { // 0001 : sub
         return data1 - data2;
-    } else if (control_line == 7) { // 0111 : set on less than
+    } else if (control_line == 2) { // 0010 : AND
+        return data1 & data2;
+    } else if (control_line == 3) { // 0011 : OR
+        return data1 | data2;
+    } else if (control_line == 4) { // 0100 : SLL (shift left logical)
+        return data1 << data2;
+    } else if (control_line == 5) { // 0101 : SRL (shift right logical)
+        return data1 >> data2;
+    } else if (control_line == 7) { // 0111 : NOR
+        return ~(data1 | data2);
+    } else if (control_line == 7) { // 1000 : SLT (set on less than)
         return data1 < data2;
-    } else if (control_line == 12) { // 1100 : NOR
-        return
+    } else if (control_line == 12) { // 1010 : LUI
+        return (data2<<16);
     } else {
         printf("Error in ALU. ALU control line value is : %d", control_line);
     }
 }
 
+
+
+// ALU Control is not used!
+/*
 // outputs ALU control line (textbook page 247)
 int ALU_control(int funct_field, bool ALUOp0, bool ALUOp1) {
     if (ALUOp0 == 0 && ALUOp1 == 0) {
@@ -310,6 +367,7 @@ int ALU_control(int funct_field, bool ALUOp0, bool ALUOp1) {
         }
     }
 }
+*/
 
 
 

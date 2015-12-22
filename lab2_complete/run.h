@@ -14,35 +14,7 @@
 
 #include "util.h"
 
-#define OPCODE(INST)		(INST)->opcode
-#define SET_OPCODE(INST, VAL)	(INST)->opcode = (short)(VAL)
 
-#define FUNC(INST)		(INST)->func_code
-#define SET_FUNC(INST, VAL)	(INST)->func_code = (short)(VAL)
-
-#define RS(INST)		(INST)->r_t.r_i.rs
-#define SET_RS(INST, VAL)	(INST)->r_t.r_i.rs = (unsigned char)(VAL)
-
-#define RT(INST)		(INST)->r_t.r_i.rt
-#define SET_RT(INST, VAL)	(INST)->r_t.r_i.rt = (unsigned char)(VAL)
-
-#define RD(INST)		(INST)->r_t.r_i.r_i.r.rd
-#define SET_RD(INST, VAL)	(INST)->r_t.r_i.r_i.r.rd = (unsigned char)(VAL)
-
-#define FS(INST)		RD(INST)
-#define SET_FS(INST, VAL)	SET_RD(INST, VAL)
- 
-#define FT(INST)		RT(INST)
-#define SET_FT(INST, VAL)	SET_RT(INST, VAL)
-
-#define FD(INST)		SHAMT(INST)
-#define SET_FD(INST, VAL)	SET_SHAMT(INST, VAL)
-
-#define SHAMT(INST)		(INST)->r_t.r_i.r_i.r.shamt
-#define SET_SHAMT(INST, VAL)	(INST)->r_t.r_i.r_i.r.shamt = (unsigned char)(VAL)
-
-#define IMM(INST)		(INST)->r_t.r_i.r_i.imm
-#define SET_IMM(INST, VAL)	(INST)->r_t.r_i.r_i.imm = (short)(VAL)
 
 #define BASE(INST)		RS(INST)
 #define SET_BASE(INST, VAL)	SET_RS(INST, VAL)
@@ -111,6 +83,16 @@
 
 /* functions */
 uint32_t*	get_inst_info(uint32_t pc);
-void		process_instruction();
+void		process_instruction(bool forwardingEnabled);
+void process_IF();
+void process_ID();
+void generate_control_signals(uint32_t instr);
+void process_EX(bool forwardingEnabled);
+void process_MEM();
+void process_WB();
+uint32_t ALU(int control_line, uint32_t data1, uint32_t data2));
+
+
+
 
 #endif
