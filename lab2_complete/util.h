@@ -62,12 +62,13 @@ typedef struct ID/EX_Struct {
     
     bool MEM_MemWrite;  // MEM
     bool MEM_MemRead;   // MEM
-    bool MEM_Branch;
+    bool MEM_Branch;    // MEM
     
     bool RegDst;        // EX
-    bool ALUOp0;        // EX
-    bool ALUOp1;        // EX
+    int ALUControl;     // EX
     bool ALUSrc;        // EX
+    
+    bool jump;
     
     
     // reg
@@ -104,6 +105,7 @@ typedef struct EX/MEM_Struct {
 
 typedef struct MEM/WB_Struct {
     // Control signals
+    bool MemRead;
     bool MemToReg;
     bool RegWrite;
     
@@ -119,7 +121,7 @@ typedef struct MEM/WB_Struct {
 
 
 typedef struct CPU_State_Struct {
-    uint32_t PC;		/* program counter */
+    uint32_t PC;                /* program counter */
     uint32_t REGS[MIPS_REGS];	/* register file */
     uint32_t PIPE[PIPE_STAGE];	/* pipeline stage */
     // Pipelines

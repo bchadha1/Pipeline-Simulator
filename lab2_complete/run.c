@@ -99,41 +99,163 @@ void process_ID(){
 
 
 void generate_control_signals(uint32_t instr){
-    if (OPCODE(instr) == 0) {               // R-type
+    bool jump = false;
+    
+    if (OPCODE(instr) == 0) {                               // R-type
+        ID_EX_pipeline_buffer.RegDst = 1;
+        ID_EX_pipeline_buffer.ALUSrc = 0;
+        ID_EX_pipeline_buffer.MEM_Branch = 0;
+        ID_EX_pipeline_buffer.MEM_MemRead = 0;
+        ID_EX_pipeline_buffer.MEM_MemWrite = 0;
+        ID_EX_pipeline_buffer.WB_RegWrite = 1;
+        ID_EX_pipeline_buffer.WB_MemToReg = 0;
+        
         switch (FUNCT(instr)) {
             case 0x21:                          // addu
-                
+                ID_EX_pipeline_buffer.ALUControl = 0;
                 break;
             case 0x24:                          // and
-                
+                ID_EX_pipeline_buffer.ALUControl = 2;
                 break;
             case 0x08:                          // jr
-                
+                jump = true;
+                // dont care
                 break;
             case 0x27:                          // nor
-                
+                ID_EX_pipeline_buffer.ALUControl = 7;
                 break;
             case 0x25:                          // or
-                
+                ID_EX_pipeline_buffer.ALUControl = 3;
                 break;
             case 0x2b:                          // sltu
-                
+                ID_EX_pipeline_buffer.ALUControl = 8;
                 break;
             case 0x00:                          // sll
-                
+                ID_EX_pipeline_buffer.ALUControl = 4;
                 break;
             case 0x02:                          // srl
-                
+                ID_EX_pipeline_buffer.ALUControl = 5;
                 break;
             case 0x23:                          // subu
-                
+                ID_EX_pipeline_buffer.ALUControl = 1;
                 break;
                 
             default:
                 printf("Unrecognized input in 'generate_control_signals' with input : %d", instr);
                 break;
-        }
+        }                                                   // J-type
+    } else if (OPCODE(instr) == 2){             // j
+        jump = true;
+        ID_EX_pipeline_buffer.MEM_MemRead = 0;
+        ID_EX_pipeline_buffer.MEM_MemWrite = 0;
+        ID_EX_pipeline_buffer.WB_RegWrite = 0;
+    } else if (OPCODE(instr) == 3){             // jal
+        jump = true;
+        ID_EX_pipeline_buffer.MEM_MemRead = 0;
+        ID_EX_pipeline_buffer.MEM_MemWrite = 0;
+        ID_EX_pipeline_buffer.WB_RegWrite = 1;
+        ID_EX_pipeline_buffer.WB_MemToReg = 0;
+        
+                                                            // I-type
+    } else if (OPCODE(instr) == 0x23){          // lw
+        ID_EX_pipeline_buffer.RegDst = 0;
+        ID_EX_pipeline_buffer.ALUControl = 0;
+        ID_EX_pipeline_buffer.ALUSrc = 1;
+        ID_EX_pipeline_buffer.MEM_Branch = 0;
+        ID_EX_pipeline_buffer.MEM_MemRead = 1;
+        ID_EX_pipeline_buffer.MEM_MemWrite = 0;
+        ID_EX_pipeline_buffer.WB_RegWrite = 1;
+        ID_EX_pipeline_buffer.WB_MemToReg = 1;
+        
+    } else if (OPCODE(instr) == 0x2B){          // sw
+        ID_EX_pipeline_buffer.ALUControl = 0;
+        ID_EX_pipeline_buffer.ALUSrc = 1;
+        ID_EX_pipeline_buffer.MEM_Branch = 0;
+        ID_EX_pipeline_buffer.MEM_MemRead = 0;
+        ID_EX_pipeline_buffer.MEM_MemWrite = 1;
+        ID_EX_pipeline_buffer.WB_RegWrite = 0;
+        
+    } else if (OPCODE(instr) == 0x4){           // beq
+        D_EX_pipeline_buffer.ALUControl = 1;
+        ID_EX_pipeline_buffer.ALUSrc = 0;
+        ID_EX_pipeline_buffer.MEM_Branch = 1;
+        ID_EX_pipeline_buffer.MEM_MemRead = 0;
+        ID_EX_pipeline_buffer.MEM_MemWrite = 0;
+        ID_EX_pipeline_buffer.WB_RegWrite = 0;
+        
+    } else if (OPCODE(instr) == 0x5){           // bne
+        D_EX_pipeline_buffer.ALUControl = 11;
+        ID_EX_pipeline_buffer.ALUSrc = 0;
+        ID_EX_pipeline_buffer.MEM_Branch = 1;
+        ID_EX_pipeline_buffer.MEM_MemRead = 0;
+        ID_EX_pipeline_buffer.MEM_MemWrite = 0;
+        ID_EX_pipeline_buffer.WB_RegWrite = 0;
+        
+    } else if (OPCODE(instr) == 0x9){           // addiu
+        ID_EX_pipeline_buffer.RegDst = 0;
+        ID_EX_pipeline_buffer.ALUControl = 0;
+        ID_EX_pipeline_buffer.ALUSrc = 1;
+        ID_EX_pipeline_buffer.MEM_Branch = 0;
+        ID_EX_pipeline_buffer.MEM_MemRead = 0;
+        ID_EX_pipeline_buffer.MEM_MemWrite = 0;
+        ID_EX_pipeline_buffer.WB_RegWrite = 1;
+        ID_EX_pipeline_buffer.WB_MemToReg = 0;
+        
+    } else if (OPCODE(instr) == 0xC){           // andi
+        ID_EX_pipeline_buffer.RegDst = 0;
+        ID_EX_pipeline_buffer.ALUControl = 2;
+        ID_EX_pipeline_buffer.ALUSrc = 1;
+        ID_EX_pipeline_buffer.MEM_Branch = 0;
+        ID_EX_pipeline_buffer.MEM_MemRead = 0;
+        ID_EX_pipeline_buffer.MEM_MemWrite = 0;
+        ID_EX_pipeline_buffer.WB_RegWrite = 1;
+        ID_EX_pipeline_buffer.WB_MemToReg = 0;
+        
+    } else if (OPCODE(instr) == 0xF){           // lui
+        ID_EX_pipeline_buffer.RegDst = 0;
+        ID_EX_pipeline_buffer.ALUControl = 10;
+        ID_EX_pipeline_buffer.ALUSrc = 1;
+        ID_EX_pipeline_buffer.MEM_Branch = 0;
+        ID_EX_pipeline_buffer.MEM_MemRead = 0;
+        ID_EX_pipeline_buffer.MEM_MemWrite = 0;
+        ID_EX_pipeline_buffer.WB_RegWrite = 1;
+        ID_EX_pipeline_buffer.WB_MemToReg = 0;
+        
+    } else if (OPCODE(instr) == 0xD){           // ori
+        ID_EX_pipeline_buffer.RegDst = 0;
+        ID_EX_pipeline_buffer.ALUControl = 3;
+        ID_EX_pipeline_buffer.ALUSrc = 1;
+        ID_EX_pipeline_buffer.MEM_Branch = 0;
+        ID_EX_pipeline_buffer.MEM_MemRead = 0;
+        ID_EX_pipeline_buffer.MEM_MemWrite = 0;
+        ID_EX_pipeline_buffer.WB_RegWrite = 1;
+        ID_EX_pipeline_buffer.WB_MemToReg = 0;
+        
+    } else if (OPCODE(instr) == 0xB){           // sltiu
+        ID_EX_pipeline_buffer.RegDst = 0;
+        ID_EX_pipeline_buffer.ALUControl = 8;
+        ID_EX_pipeline_buffer.ALUSrc = 1;
+        ID_EX_pipeline_buffer.MEM_Branch = 0;
+        ID_EX_pipeline_buffer.MEM_MemRead = 0;
+        ID_EX_pipeline_buffer.MEM_MemWrite = 0;
+        ID_EX_pipeline_buffer.WB_RegWrite = 1;
+        ID_EX_pipeline_buffer.WB_MemToReg = 0;
+        
+    } else {
+        printf("Unrecognized OPCODE : %d", OPCODE(instr));
     }
+    
+    
+    if (jump) {
+        // *TO DO*
+        // DO FLUSH
+        
+        // set jump buffer
+        ID_EX_pipeline_buffer.jump = true;
+    } else {
+        ID_EX_pipeline_buffer.jump = false;
+    }
+    
 }
 
 
@@ -158,7 +280,11 @@ void process_EX(bool forwardingEnabled){
     EX_MEM_pipeline_buffer.Branch = prevID_EX_pipeline.MEM_Branch;
     
     // PC (for J and JR instruction)
-    //EX_MEM_pipeline_buffer.NPC = prevID_EX_pipeline.NPC + (prevID_EX_pipeline.IMM << 2);
+    EX_MEM_pipeline_buffer.NPC = prevID_EX_pipeline.NPC + (prevID_EX_pipeline.IMM << 2);
+    
+    if (prevID_EX_pipeline.jump) {
+        <#statements#>
+    }
     
     int forwardA = 00;
     int forwardB = 00;
@@ -273,12 +399,35 @@ void process_EX(bool forwardingEnabled){
     
 }
 
-void process_MEM(){
+void process_MEM(bool forwardingEnabled){
     EX/MEM prevEX_MEM_pipeline = CURRENT_STATE.EX_MEM_pipeline;
     
     // shift the pipelined control signals
     MEM_WB_pipeline_buffer.MemToReg = prevEX_MEM_pipeline.WB_MemToReg;
-    MEM_WB_pipeline_buffer.RegWrite = prevID_EX_pipeline.WB_RegToWrite;
+    MEM_WB_pipeline_buffer.RegWrite = prevEX_MEM_pipeline.WB_RegWrite;
+    MEM_WB_pipeline_buffer.MemRead = prevEX_MEM_pipeline.MemRead;
+    
+    // branching
+    if (prevEX_MEM_pipeline.zero & prevEX_MEM_pipeline.Branch) {
+        CURRENT_STATE.PC = prevEX_MEM_pipeline.NPC;
+    } else {
+        CURRENT_STATE.PC += 4;
+    }
+    
+    
+    
+    
+    // forwarding
+    bool forwardingDone = false;
+    
+    if (forwardingEnabled) {
+        if (CURRENT_STATE.MEM_WB_pipeline.MemRead & CURRENT_STATE.EX_MEM_pipeline.MemWrite) {
+            if (CURRENT_STATE.EX_MEM_pipeline.RegDstNum == CURRENT_STATE.MEM_WB_pipeline.RegDstNum) {
+                mem_write_32(prevID_EX_pipeline.ALU_OUT, CURRENT_STATE.MEM_WB_pipeline.Mem_OUT);
+                forwardingDone = true;
+            }
+        }
+    }
     
     // Read data from memory
     if (prevID_EX_pipeline.MemRead) {
@@ -288,7 +437,7 @@ void process_MEM(){
     }
     
     // Write data to memory
-    if (prevID_EX_pipeline.MemWrite) {
+    if (prevID_EX_pipeline.MemWrite & (!forwardingDone)) {
         mem_write_32(prevID_EX_pipeline.ALU_OUT, prevID_EX_pipeline.data2);
     }
     
@@ -335,7 +484,10 @@ uint32_t ALU(int control_line, uint32_t data1, uint32_t data2)) {
         return data1 < data2;
     } else if (control_line == 12) { // 1010 : LUI
         return (data2<<16);
-    } else {
+    } else if (control_line == ) {  // 1011 : not equal
+        return !(data1-data2);
+    }
+    else {
         printf("Error in ALU. ALU control line value is : %d", control_line);
     }
 }
