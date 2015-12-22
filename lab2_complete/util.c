@@ -276,6 +276,14 @@ void pdump() {
     printf("Current pipeline PC state :\n");
     printf("-------------------------------------\n");
     printf("CYCLE %d:", INSTRUCTION_COUNT );
+    
+    printf("0x%08x", CURRENT_STATE.PC);
+    printf("0x%08x", CURRENT_STATE.IF_ID_pipeline.NPC);
+    printf("0x%08x", CURRENT_STATE.ID_EX_pipeline.NPC);
+    printf("0x%08x", CURRENT_STATE.EX_MEM_pipeline.NPC);
+    printf("0x%08x", CURRENT_STATE.MEM_WB_pipeline.NPC);CURRENT_STATE.ID_EX_pipeline.
+    
+    /*
     for(k = 0; k < 5; k++)
     {
     	if(CURRENT_STATE.PIPE[k])
@@ -286,6 +294,8 @@ void pdump() {
 	if( k != PIPE_STAGE - 1 )
 	    printf("|");
     }
+    */
+    
     printf("\n\n");
 }
 

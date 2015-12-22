@@ -333,7 +333,23 @@ void generate_control_signals(uint32_t instr){
 
 
 void process_EX(bool forwardingEnabled){
-    
+    if (stallcount2) { // no-op
+        CURRENT_STATE.ID_EX_pipeline.NPC = 0;
+        CURRENT_STATE.ID_EX_pipeline.WB_MemToReg = 0;
+        CURRENT_STATE.ID_EX_pipeline.WB_RegWrite = 0;
+        CURRENT_STATE.ID_EX_pipeline.MEM_MemWrite = 0;
+        CURRENT_STATE.ID_EX_pipeline.MEM_MemRead = 0;
+        CURRENT_STATE.ID_EX_pipeline.MEM_Branch = 0;
+        CURRENT_STATE.ID_EX_pipeline.RegDst = 0;
+        CURRENT_STATE.ID_EX_pipeline.ALUControl = 0;
+        CURRENT_STATE.ID_EX_pipeline.ALUSrc = 0;
+        CURRENT_STATE.ID_EX_pipeline.jump = 0;
+        CURRENT_STATE.ID_EX_pipeline.REG1 = 0;
+        CURRENT_STATE.ID_EX_pipeline.REG2 = 0;
+        CURRENT_STATE.ID_EX_pipeline.IMM = 0;
+        CURRENT_STATE.ID_EX_pipeline.inst16_20 = 0;
+        CURRENT_STATE.ID_EX_pipeline.inst11_15 = 0;
+    }
     
     ID/EX prevID_EX_pipeline = CURRENT_STATE.ID_EX_pipeline;
     
@@ -468,6 +484,7 @@ void process_MEM(bool forwardingEnabled){
     MEM_WB_pipeline_buffer.MemToReg = prevEX_MEM_pipeline.WB_MemToReg;
     MEM_WB_pipeline_buffer.RegWrite = prevEX_MEM_pipeline.WB_RegWrite;
     MEM_WB_pipeline_buffer.MemRead = prevEX_MEM_pipeline.MemRead;
+    MEM_WB_pipeline_buffer.NPC = prevEX_MEM_pipeline.NPC;
     
     // branching
     uint32_t inst = prevIF_ID_pipeline.instr;

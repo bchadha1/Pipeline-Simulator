@@ -105,6 +105,9 @@ typedef struct EX/MEM_Struct {
 } EX/MEM;
 
 typedef struct MEM/WB_Struct {
+    // PC
+    uint32_t NPC; 
+    
     // Control signals
     bool MemRead;
     bool MemToReg;
