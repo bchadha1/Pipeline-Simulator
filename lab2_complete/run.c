@@ -288,10 +288,6 @@ void generate_control_signals(uint32_t instr, bool forwardingEnabled){
     
     
     if (jump) {
-        // *TO DO*
-        // DO FLUSH
-        
-        
         // set jump varibale
         globaljump = true;
     } else {

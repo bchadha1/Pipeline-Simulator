@@ -143,10 +143,10 @@ int main(int argc, char *argv[]) {
 
     while(count != argc-1){
     
-    if (strcmp(argv[count], "-nobp")) {
+    if (strcmp(argv[count], "-nobp") == 0) {
         branchPredictionEnabled = false;
     }
-    else if (strcmp(argv[count], "-f")) {
+    else if (strcmp(argv[count], "-f") == 0) {
         forwardingEnabled = true;
     }
 	else if(strcmp(argv[count], "-m") == 0){
@@ -162,8 +162,9 @@ int main(int argc, char *argv[]) {
 	    num_inst = (int)strtol(argv[++count], NULL, 10);
 	    num_inst_set = 1;
 	}
-	else if(strcmp(argv[count], "-p") == 0)
+    else if(strcmp(argv[count], "-p") == 0){
 	    pipe_dump_set = 1;
+    }
 	else{
 	    printf("Error: usage: %s [-nobp] [-f] [-m addr1:addr2] [-d] [-p] [-n num_instr] inputBinary\n", argv[0]);
 	    //You must add nobp and f option yourself - done
@@ -177,16 +178,16 @@ int main(int argc, char *argv[]) {
     if(debug_set){
 	printf("Simulating for %d cycles...\n\n", i);
 
-	for(; i > 0; i--){
+	for(int j = 0; j < i; j++){
 	    if (RUN_BIT == FALSE){
 	    	printf("Simulator halted\n\n");
 		break;
 	    }
 	    cycle(forwardingEnabled);
-
+        
 	    if(pipe_dump_set) pdump();
-	    rdump();	
-	    if(mem_dump_set) mdump(addr1, addr2);
+	    //rdump();
+	    //if(mem_dump_set) mdump(addr1, addr2);
 	}
     }
     else{

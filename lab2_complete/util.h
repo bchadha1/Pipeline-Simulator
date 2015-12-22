@@ -176,6 +176,7 @@ char**		str_split(char *a_str, const char a_delim);
 int		fromBinary(char *s);
 uint32_t	mem_read_32(uint32_t address);
 void		mem_write_32(uint32_t address, uint32_t value);
+void        cycle(bool forwardingEnabled);
 void		run(int num_cycles, bool forwardingEnabled);
 void		go(bool forwardingEnabled);
 void		mdump(int start, int stop);
@@ -183,6 +184,9 @@ void		rdump();
 void        pdump();
 void		init_memory();
 void		init_inst_info();
+
+
+extern void process_instruction(bool forwardingEnabled);
 
 
 #endif
