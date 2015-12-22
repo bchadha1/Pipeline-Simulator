@@ -1,0 +1,11 @@
+#Xcode related stuff
+
+MIPS-Simulator/
+
+#OS X related
+.DS_Store
+*.dSYM
+
+
+#compiled binary
+cs311sim
