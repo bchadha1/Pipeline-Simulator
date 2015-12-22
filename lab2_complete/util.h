@@ -15,6 +15,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
+#include "run.h"
 
 #define FALSE 0
 #define TRUE  1
@@ -43,7 +45,7 @@
 
 
 
-typedef struct IF/ID_Struct {
+typedef struct IF_ID_Struct {
     // PC
     uint32_t NPC;
     
@@ -51,9 +53,9 @@ typedef struct IF/ID_Struct {
     uint32_t instr;
     
     
-} IF/ID;
+} IF_ID;
 
-typedef struct ID/EX_Struct {
+typedef struct ID_EX_Struct {
     // PC
     uint32_t NPC;
     
@@ -80,9 +82,9 @@ typedef struct ID/EX_Struct {
     uint32_t inst16_20;
     uint32_t inst11_15;
     
-} ID/EX;
+} ID_EX;
 
-typedef struct EX/MEM_Struct {
+typedef struct EX_MEM_Struct {
     // PC
     uint32_t NPC;       // branch target address
     
@@ -102,9 +104,9 @@ typedef struct EX/MEM_Struct {
     uint32_t data2;             // untouched data2 from register.
     uint32_t RegDstNum;         // 5 bit Register destination (if write)
     
-} EX/MEM;
+} EX_MEM;
 
-typedef struct MEM/WB_Struct {
+typedef struct MEM_WB_Struct {
     // PC
     uint32_t NPC; 
     
@@ -119,7 +121,7 @@ typedef struct MEM/WB_Struct {
     
     uint32_t RegDstNum;         // 5 bit Register destination (if write)
     
-} MEM/WB;
+} MEM_WB;
 
 
 
@@ -129,10 +131,10 @@ typedef struct CPU_State_Struct {
     uint32_t REGS[MIPS_REGS];	/* register file */
     uint32_t PIPE[PIPE_STAGE];	/* pipeline stage */
     // Pipelines
-    IF/ID IF_ID_pipeline;
-    ID/EX ID_EX_pipeline;
-    EX/MEM EX_MEM_pipeline;
-    MEM/WB MEM_WB_pipeline;
+    IF_ID IF_ID_pipeline;
+    ID_EX ID_EX_pipeline;
+    EX_MEM EX_MEM_pipeline;
+    MEM_WB MEM_WB_pipeline;
     
 } CPU_State;
 
@@ -146,10 +148,10 @@ typedef struct {
 extern CPU_State CURRENT_STATE;
 
 /* Pipelines */
-extern IF/ID IF_ID_pipeline_buffer;
-extern ID/EX ID_EX_pipeline_buffer;
-extern EX/MEM EX_MEM_pipeline_buffer;
-extern MEM/WB MEM_WB_pipeline_buffer;
+extern IF_ID IF_ID_pipeline_buffer;
+extern ID_EX ID_EX_pipeline_buffer;
+extern EX_MEM EX_MEM_pipeline_buffer;
+extern MEM_WB MEM_WB_pipeline_buffer;
 extern bool globaljump;
 extern bool globaljal;
 extern bool globalJumpAndReturn;
@@ -159,7 +161,7 @@ extern int stallcount2;
 
 
 /* For Instructions */
-extern instruction *INST_INFO;
+extern uint32_t *INST_INFO;
 extern int NUM_INST;
 
 /* For Memory Regions */
@@ -174,15 +176,14 @@ char**		str_split(char *a_str, const char a_delim);
 int		fromBinary(char *s);
 uint32_t	mem_read_32(uint32_t address);
 void		mem_write_32(uint32_t address, uint32_t value);
-void		cycle();
-void		run(int num_cycles);
-void		go();
+void		cycle(bool forwardingEnabled);
+void		run(int num_cycles, bool forwardingEnabled);
+void		go(bool forwardingEnabled);
 void		mdump(int start, int stop);
 void		rdump();
+void        pdump();
 void		init_memory();
 void		init_inst_info();
 
-/* YOU IMPLEMENT THIS FUNCTION */
-void	process_instruction();
 
 #endif

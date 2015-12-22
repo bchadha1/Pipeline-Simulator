@@ -177,7 +177,7 @@ void mem_write_32(uint32_t address, uint32_t value)
 /*                                                             */
 /***************************************************************/
 void cycle(bool forwardingEnabled) {
-    process_instruction(bool forwardingEnabled);
+    process_instruction(forwardingEnabled);
     INSTRUCTION_COUNT++;
 }
 
@@ -202,7 +202,7 @@ void run(int num_cycles, bool forwardingEnabled) {
 	    printf("Simulator halted\n\n");
 	    break;
 	}
-	cycle(bool forwardingEnabled);
+	cycle(forwardingEnabled);
     }
 }
 
@@ -281,7 +281,8 @@ void pdump() {
     printf("0x%08x", CURRENT_STATE.IF_ID_pipeline.NPC);
     printf("0x%08x", CURRENT_STATE.ID_EX_pipeline.NPC);
     printf("0x%08x", CURRENT_STATE.EX_MEM_pipeline.NPC);
-    printf("0x%08x", CURRENT_STATE.MEM_WB_pipeline.NPC);CURRENT_STATE.ID_EX_pipeline.
+    printf("0x%08x", CURRENT_STATE.MEM_WB_pipeline.NPC);
+    
     
     /*
     for(k = 0; k < 5; k++)
@@ -327,14 +328,6 @@ void init_inst_info()
 
     for(i = 0; i < NUM_INST; i++)
     {
-	INST_INFO[i].value = 0;
-	INST_INFO[i].opcode = 0;
-	INST_INFO[i].func_code = 0;
-	INST_INFO[i].r_t.r_i.rs = 0;
-	INST_INFO[i].r_t.r_i.rt = 0;
-	INST_INFO[i].r_t.r_i.r_i.r.rd = 0;
-	INST_INFO[i].r_t.r_i.r_i.imm = 0;
-	INST_INFO[i].r_t.r_i.r_i.r.shamt = 0;
-	INST_INFO[i].r_t.target = 0;
+        INST_INFO[i] =0;
     }
 }

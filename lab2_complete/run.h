@@ -82,15 +82,15 @@
 }
 
 /* functions */
-uint32_t*	get_inst_info(uint32_t pc);
-void		process_instruction(bool forwardingEnabled);
+uint32_t get_inst_info(uint32_t pc);
+void process_instruction(bool forwardingEnabled);
 void process_IF();
-void process_ID();
-void generate_control_signals(uint32_t instr);
+void process_ID(bool forwardingEnabled);
+void generate_control_signals(uint32_t instr, bool forwardingEnabled);
 void process_EX(bool forwardingEnabled);
 void process_MEM(bool forwardingEnabled);
 void process_WB();
-uint32_t ALU(int control_line, uint32_t data1, uint32_t data2));
+uint32_t ALU(int control_line, uint32_t data1, uint32_t data2);
 
 
 

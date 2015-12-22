@@ -69,6 +69,7 @@ void load_program(char *program_filename) {
 
 	else
 	{
+        /*
 	    if(ii < text_size){
 		INST_INFO[text_index++] = parsing_instr(buffer, ii);
 	    }
@@ -81,6 +82,7 @@ void load_program(char *program_filename) {
 		//assert(0);
 		//However, there is a newline in the input file
 	    }
+         */
 	    ii += 4;
 	}
 	flag++;

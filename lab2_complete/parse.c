@@ -24,6 +24,7 @@ void parsing_data(const char *buffer, const int index)
     mem_write_32(MEM_DATA_START + index, word);
 }
 
+/*
 void print_parse_result()
 {
     int i;
@@ -79,3 +80,4 @@ void print_parse_result()
 	printf("data_seg[%d] : %x\n", i, mem_read_32(MEM_DATA_START + i));
     printf("Current PC: %x\n", CURRENT_STATE.PC);
 }
+ */

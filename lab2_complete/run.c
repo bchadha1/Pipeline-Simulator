@@ -19,9 +19,9 @@
 /* Purpose: Read insturction information                       */
 /*                                                             */
 /***************************************************************/
-uint32_t* get_inst_info(uint32_t pc)
+uint32_t get_inst_info(uint32_t pc)
 { 
-    return &INST_INFO[(pc - MEM_TEXT_START) >> 2];
+    return INST_INFO[(pc - MEM_TEXT_START) >> 2];
 }
 
 /***************************************************************/
@@ -35,7 +35,7 @@ void process_instruction(bool forwardingEnabled){
     
     
     process_IF();
-    process_ID();
+    process_ID(forwardingEnabled);
     
     process_EX(forwardingEnabled);
     process_MEM(forwardingEnabled);
@@ -71,7 +71,7 @@ void process_IF() {
     IF_ID_pipeline_buffer.NPC = CURRENT_STATE.PC + 4;
     
     // Instruction Fetch
-    uint32_t *inst = get_inst_info(CURRENT_STATE.PC);;
+    uint32_t inst = get_inst_info(CURRENT_STATE.PC);
     IF_ID_pipeline_buffer.instr = inst; // both are pointers
 }
 
@@ -85,18 +85,18 @@ void process_IF() {
  
  output:
  **************************************************************/
-void process_ID(){
+void process_ID(bool forwardingEnabled){
     // check stall
     if (stallcount) {
         CURRENT_STATE.IF_ID_pipeline.instr = 0; // no-op
         stallcount--;
     }
     
-    IF/ID prevIF_ID_pipeline = CURRENT_STATE.IF_ID_pipeline;
+    IF_ID prevIF_ID_pipeline = CURRENT_STATE.IF_ID_pipeline;
     uint32_t inst = prevIF_ID_pipeline.instr;
     
     // control signals
-    generate_control_signals(inst);
+    generate_control_signals(inst, forwardingEnabled);
     
     
     
@@ -121,7 +121,7 @@ void process_ID(){
 }
 
 
-void generate_control_signals(uint32_t instr){
+void generate_control_signals(uint32_t instr, bool forwardingEnabled){
     bool jump = false;
     bool jal = false;
     bool jumpandreturn = false;
@@ -215,7 +215,7 @@ void generate_control_signals(uint32_t instr){
         ALUinstruction = false;
         
     } else if (OPCODE(instr) == 0x4){           // beq
-        D_EX_pipeline_buffer.ALUControl = 1;
+        ID_EX_pipeline_buffer.ALUControl = 1;
         ID_EX_pipeline_buffer.ALUSrc = 0;
         ID_EX_pipeline_buffer.MEM_Branch = 1;
         ID_EX_pipeline_buffer.MEM_MemRead = 0;
@@ -224,7 +224,7 @@ void generate_control_signals(uint32_t instr){
         stallcount = 3;
         
     } else if (OPCODE(instr) == 0x5){           // bne
-        D_EX_pipeline_buffer.ALUControl = 11;
+        ID_EX_pipeline_buffer.ALUControl = 11;
         ID_EX_pipeline_buffer.ALUSrc = 0;
         ID_EX_pipeline_buffer.MEM_Branch = 1;
         ID_EX_pipeline_buffer.MEM_MemRead = 0;
@@ -351,11 +351,11 @@ void process_EX(bool forwardingEnabled){
         CURRENT_STATE.ID_EX_pipeline.inst11_15 = 0;
     }
     
-    ID/EX prevID_EX_pipeline = CURRENT_STATE.ID_EX_pipeline;
+    ID_EX prevID_EX_pipeline = CURRENT_STATE.ID_EX_pipeline;
     
     // shift the pipelined control signals
     EX_MEM_pipeline_buffer.WB_MemToReg = prevID_EX_pipeline.WB_MemToReg;
-    EX_MEM_pipeline_buffer.WB_RegToWrite = prevID_EX_pipeline.WB_RegToWrite;
+    EX_MEM_pipeline_buffer.WB_RegWrite = prevID_EX_pipeline.WB_RegWrite;
     
     EX_MEM_pipeline_buffer.MemWrite = prevID_EX_pipeline.MEM_MemWrite;
     EX_MEM_pipeline_buffer.MemRead = prevID_EX_pipeline.MEM_MemRead;
@@ -372,7 +372,7 @@ void process_EX(bool forwardingEnabled){
     if (forwardingEnabled) {
         
     
-    if (CURRENT_STATE.EX_MEM_pipeline.RegWrite) {
+    if (CURRENT_STATE.EX_MEM_pipeline.WB_RegWrite) {
         if (CURRENT_STATE.EX_MEM_pipeline.RegDstNum != 0) {
             if (CURRENT_STATE.EX_MEM_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.REG1) {
                 forwardA = 10;
@@ -386,14 +386,14 @@ void process_EX(bool forwardingEnabled){
     // MEM hazard
     if (CURRENT_STATE.MEM_WB_pipeline.RegWrite) {
         if (CURRENT_STATE.MEM_WB_pipeline.RegDstNum != 0) {
-            if !(CURRENT_STATE.EX_MEM_pipeline.RegWrite && (CURRENT_STATE.EX_MEM_pipeline.RegDstNum !=0) && (CURRENT_STATE.EX_MEM_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.REG1)) {
+            if (!(CURRENT_STATE.EX_MEM_pipeline.WB_RegWrite && (CURRENT_STATE.EX_MEM_pipeline.RegDstNum !=0) && (CURRENT_STATE.EX_MEM_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.REG1))) {
                 
                 if (CURRENT_STATE.MEM_WB_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.REG1) {
                     forwardA = 01;
                 }
             }
             
-            if !(CURRENT_STATE.EX_MEM_pipeline.RegWrite && (CURRENT_STATE.EX_MEM_pipeline.RegDstNum !=0) && (CURRENT_STATE.EX_MEM_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.REG2)) {
+            if (!(CURRENT_STATE.EX_MEM_pipeline.WB_RegWrite && (CURRENT_STATE.EX_MEM_pipeline.RegDstNum !=0) && (CURRENT_STATE.EX_MEM_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.REG2))) {
                 
                 if (CURRENT_STATE.MEM_WB_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.REG2) {
                     forwardB = 01;
@@ -413,7 +413,7 @@ void process_EX(bool forwardingEnabled){
     
     // 3 to 1 MUX
     if (forwardA == 00) {
-        ALUinput1 = prevID_EX_pipeline.data1;
+        ALUinput1 = prevID_EX_pipeline.REG1;
     } else if (forwardA == 10) {
         ALUinput1 = CURRENT_STATE.EX_MEM_pipeline.ALU_OUT;
     } else if (forwardA == 01) {
@@ -426,12 +426,12 @@ void process_EX(bool forwardingEnabled){
         }
         ALUinput1 = writeData;
     } else {
-        printf("unrecognized fowardA signal : %d", fowardA);
+        printf("unrecognized fowardA signal : %d", forwardA);
     }
     
     // 3 to 1 MUX
     if (forwardB == 00) {
-        ALUinput2 = prevID_EX_pipeline.data2;
+        ALUinput2 = prevID_EX_pipeline.REG2;
     } else if (forwardB == 10) {
         ALUinput2 = CURRENT_STATE.EX_MEM_pipeline.ALU_OUT;
     } else if (forwardB == 01){
@@ -444,8 +444,11 @@ void process_EX(bool forwardingEnabled){
         }
         ALUinput2 = writeData;
     } else {
-        printf("unrecognized fowardB signal : %d", fowardB);
+        printf("unrecognized fowardB signal : %d", forwardB);
     }
+    
+    // transfer data2
+    EX_MEM_pipeline_buffer.data2 = ALUinput2;
     
     // Another MUX inside
     // if ALUSrc == 1, the second ALU operand is the sign-extended, lower 16 bits of the instruction.
@@ -454,12 +457,11 @@ void process_EX(bool forwardingEnabled){
         ALUinput2 = prevID_EX_pipeline.IMM;
     }
     
-    // transfer data2
-    EX_MEM_pipeline_buffer.data2 = prevID_EX_pipeline.data2;
+    
     
     // calculate ALU control
     int funct_field = (prevID_EX_pipeline.IMM & 63); // extract funct field from instruction[0~15]
-    int control_line = ALU_control(funct_field, prevID_EX_pipeline.ALUOp0, prevID_EX_pipeline.ALUOp1);
+    int control_line = prevID_EX_pipeline.ALUControl;
     
     // process ALU
     uint32_t ALUresult = ALU(control_line, ALUinput1, ALUinput2);
@@ -478,7 +480,7 @@ void process_EX(bool forwardingEnabled){
 }
 
 void process_MEM(bool forwardingEnabled){
-    EX/MEM prevEX_MEM_pipeline = CURRENT_STATE.EX_MEM_pipeline;
+    EX_MEM prevEX_MEM_pipeline = CURRENT_STATE.EX_MEM_pipeline;
     
     // shift the pipelined control signals
     MEM_WB_pipeline_buffer.MemToReg = prevEX_MEM_pipeline.WB_MemToReg;
@@ -487,19 +489,20 @@ void process_MEM(bool forwardingEnabled){
     MEM_WB_pipeline_buffer.NPC = prevEX_MEM_pipeline.NPC;
     
     // branching
+    IF_ID prevIF_ID_pipeline = CURRENT_STATE.IF_ID_pipeline;
     uint32_t inst = prevIF_ID_pipeline.instr;
     
-    if (jump) {
+    if (globaljump) {
         PC_buffer = ((CURRENT_STATE.PC+4)&0xF0000000) + (J250(inst)<<2);
         if (globalJumpAndReturn) {
             PC_buffer = CURRENT_STATE.REGS[31];
         }
         
     } else {
-        if (prevEX_MEM_pipeline.zero & prevEX_MEM_pipeline.Branch) {
+        if (prevEX_MEM_pipeline.zero & prevEX_MEM_pipeline.Branch) { // branch condition
             PC_buffer = prevEX_MEM_pipeline.NPC;
         } else {
-            PC_buffer = CURRENT_STATE + 4;
+            PC_buffer = CURRENT_STATE.PC + 4;
         }
     }
     
@@ -514,31 +517,31 @@ void process_MEM(bool forwardingEnabled){
     if (forwardingEnabled) {
         if (CURRENT_STATE.MEM_WB_pipeline.MemRead & CURRENT_STATE.EX_MEM_pipeline.MemWrite) {
             if (CURRENT_STATE.EX_MEM_pipeline.RegDstNum == CURRENT_STATE.MEM_WB_pipeline.RegDstNum) {
-                mem_write_32(prevID_EX_pipeline.ALU_OUT, CURRENT_STATE.MEM_WB_pipeline.Mem_OUT);
+                mem_write_32(prevEX_MEM_pipeline.ALU_OUT, CURRENT_STATE.MEM_WB_pipeline.Mem_OUT);
                 forwardingDone = true;
             }
         }
     }
     
     // Read data from memory
-    if (prevID_EX_pipeline.MemRead) {
-        MEM_WB_pipeline_buffer.Mem_OUT = mem_read_32(prevID_EX_pipeline.ALU_OUT);
+    if (prevEX_MEM_pipeline.MemRead) {
+        MEM_WB_pipeline_buffer.Mem_OUT = mem_read_32(prevEX_MEM_pipeline.ALU_OUT);
     } else {
-        MEM_WB_pipeline_buffer.ALU_OUT = prevID_EX_pipeline.ALU_OUT;
+        MEM_WB_pipeline_buffer.ALU_OUT = prevEX_MEM_pipeline.ALU_OUT;
     }
     
     // Write data to memory
-    if (prevID_EX_pipeline.MemWrite & (!forwardingDone)) {
-        mem_write_32(prevID_EX_pipeline.ALU_OUT, prevID_EX_pipeline.data2);
+    if (prevEX_MEM_pipeline.MemWrite & (!forwardingDone)) {
+        mem_write_32(prevEX_MEM_pipeline.ALU_OUT, prevEX_MEM_pipeline.data2);
     }
     
     // shift Register destination number (on write)
-    MEM_WB_pipeline_buffer.RegDstNum = prevID_EX_pipeline.RegDstNum;
+    MEM_WB_pipeline_buffer.RegDstNum = prevEX_MEM_pipeline.RegDstNum;
     
 }
 
 void process_WB(){
-    MEM/WB prevMEM_WB_pipeline = CURRENT_STATE.MEM_WB_pipeline;
+    MEM_WB prevMEM_WB_pipeline = CURRENT_STATE.MEM_WB_pipeline;
     
     // MUX for which data to write.
     uint32_t writeData;
@@ -556,7 +559,7 @@ void process_WB(){
 }
 
 // control line ranges from 0 to 10 (4digits)
-uint32_t ALU(int control_line, uint32_t data1, uint32_t data2)) {
+uint32_t ALU(int control_line, uint32_t data1, uint32_t data2) {
     if (control_line == 0) {        // 0000 : add
         return data1 + data2;
     } else if (control_line == 1) { // 0001 : sub
@@ -571,16 +574,17 @@ uint32_t ALU(int control_line, uint32_t data1, uint32_t data2)) {
         return data1 >> data2;
     } else if (control_line == 7) { // 0111 : NOR
         return ~(data1 | data2);
-    } else if (control_line == 7) { // 1000 : SLT (set on less than)
+    } else if (control_line == 8) { // 1000 : SLT (set on less than)
         return data1 < data2;
-    } else if (control_line == 12) { // 1010 : LUI
+    } else if (control_line == 10) { // 1010 : LUI
         return (data2<<16);
-    } else if (control_line == ) {  // 1011 : not equal
+    } else if (control_line == 11) {  // 1011 : not equal
         return !(data1-data2);
     }
     else {
         printf("Error in ALU. ALU control line value is : %d", control_line);
     }
+    return 0;
 }
 
 
