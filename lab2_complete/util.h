@@ -118,37 +118,6 @@ typedef struct CPU_State_Struct {
     
 } CPU_State;
 
-typedef struct inst_s {
-    short opcode;
-    
-    /*R-type*/
-    short func_code;
-
-    union {
-        /* R-type or I-type: */
-        struct {
-	    unsigned char rs;
-	    unsigned char rt;
-
-	    union {
-	        short imm;
-
-	        struct {
-		    unsigned char rd;
-		    unsigned char shamt;
-		} r;
-	    } r_i;
-	} r_i;
-        /* J-type: */
-        uint32_t target;
-    } r_t;
-
-    uint32_t value;
-    
-    //int32 encoding;
-    //imm_expr *expr;
-    //char *source_line;
-} instruction;
 
 typedef struct {
     uint32_t start, size;

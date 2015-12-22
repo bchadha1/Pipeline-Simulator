@@ -57,7 +57,7 @@ void load_program(char *program_filename) {
 	    text_size = fromBinary(buffer);
 	    NUM_INST = text_size/4;
 	    //initial memory allocation of text segment
-	    INST_INFO = malloc(sizeof(instruction)*NUM_INST);
+        INST_INFO = malloc(sizeof(uint32_t)*NUM_INST);
 	    init_inst_info(NUM_INST);
 	}
 

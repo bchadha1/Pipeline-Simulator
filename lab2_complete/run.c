@@ -19,7 +19,7 @@
 /* Purpose: Read insturction information                       */
 /*                                                             */
 /***************************************************************/
-instruction* get_inst_info(uint32_t pc) 
+uint32_t* get_inst_info(uint32_t pc)
 { 
     return &INST_INFO[(pc - MEM_TEXT_START) >> 2];
 }
@@ -32,7 +32,6 @@ instruction* get_inst_info(uint32_t pc)
 /*                                                             */
 /***************************************************************/
 void process_instruction(bool forwardingEnabled){
-    CPU_State new_CPU_STATE;
     
     process_IF();
     process_ID();
@@ -41,8 +40,12 @@ void process_instruction(bool forwardingEnabled){
     process_WB();
     
     
-    // *TODO*
     // buffer -> Current CPU state
+    CURRENT_STATE.IF_ID_pipeline = IF_ID_pipeline_buffer;
+    CURRENT_STATE.ID_EX_pipeline = ID_EX_pipeline_buffer;
+    CURRENT_STATE.EX_MEM_pipeline = EX_MEM_pipeline_buffer;
+    CURRENT_STATE.MEM_WB_pipeline = MEM_WB_pipeline_buffer;
+    
 }
 
 
@@ -58,7 +61,7 @@ void process_IF() {
     IF_ID_pipeline_buffer.NPC = CURRENT_STATE.PC + 4;
     
     // Instruction Fetch
-    instruction *inst = get_inst_info(CURRENT_STATE.PC);;
+    uint32_t *inst = get_inst_info(CURRENT_STATE.PC);;
     IF_ID_pipeline_buffer.instr = inst; // both are pointers
 }
 
@@ -74,7 +77,7 @@ void process_IF() {
  **************************************************************/
 void process_ID(){
     IF/ID prevIF_ID_pipeline = CURRENT_STATE.IF_ID_pipeline;
-    instruction *inst = prevIF_ID_pipeline.instr;
+    uint32_t *inst = prevIF_ID_pipeline.instr;
     
     // TODO : control signals
     //
