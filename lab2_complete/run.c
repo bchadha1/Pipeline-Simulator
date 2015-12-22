@@ -43,7 +43,7 @@ void process_instruction(bool forwardingEnabled){
     
     
     // buffer -> Current CPU state
-    
+    printf("stallcount2 is %d\n", stallcount2);
     if (!stallcount2) {
         CURRENT_STATE.IF_ID_pipeline = IF_ID_pipeline_buffer;
     } else {
@@ -54,6 +54,8 @@ void process_instruction(bool forwardingEnabled){
     CURRENT_STATE.MEM_WB_pipeline = MEM_WB_pipeline_buffer;
     if (!stallcount) {
         CURRENT_STATE.PC = PC_buffer;
+    } else {
+        stallcount--;
     }
     
 }
@@ -89,11 +91,13 @@ void process_ID(bool forwardingEnabled){
     // check stall
     if (stallcount) {
         CURRENT_STATE.IF_ID_pipeline.instr = 0; // no-op
-        stallcount--;
     }
     
     IF_ID prevIF_ID_pipeline = CURRENT_STATE.IF_ID_pipeline;
     uint32_t inst = prevIF_ID_pipeline.instr;
+    
+    // PC update
+    ID_EX_pipeline_buffer.NPC = prevIF_ID_pipeline.NPC;
     
     // control signals
     generate_control_signals(inst, forwardingEnabled);
@@ -349,6 +353,9 @@ void process_EX(bool forwardingEnabled){
     
     ID_EX prevID_EX_pipeline = CURRENT_STATE.ID_EX_pipeline;
     
+    // shift PC
+    EX_MEM_pipeline_buffer.REALPC = prevID_EX_pipeline.NPC;
+    
     // shift the pipelined control signals
     EX_MEM_pipeline_buffer.WB_MemToReg = prevID_EX_pipeline.WB_MemToReg;
     EX_MEM_pipeline_buffer.WB_RegWrite = prevID_EX_pipeline.WB_RegWrite;
@@ -482,7 +489,7 @@ void process_MEM(bool forwardingEnabled){
     MEM_WB_pipeline_buffer.MemToReg = prevEX_MEM_pipeline.WB_MemToReg;
     MEM_WB_pipeline_buffer.RegWrite = prevEX_MEM_pipeline.WB_RegWrite;
     MEM_WB_pipeline_buffer.MemRead = prevEX_MEM_pipeline.MemRead;
-    MEM_WB_pipeline_buffer.NPC = prevEX_MEM_pipeline.NPC;
+    MEM_WB_pipeline_buffer.NPC = prevEX_MEM_pipeline.REALPC;
     
     // branching
     IF_ID prevIF_ID_pipeline = CURRENT_STATE.IF_ID_pipeline;

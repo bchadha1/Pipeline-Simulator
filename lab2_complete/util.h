@@ -34,11 +34,11 @@
 
 // instruction information extracting macros
 #define FUNCT(INST)     (INST & 0x0000001F)
-#define SHAMT(INST)     (INST & 0x000007C0)>>5
-#define RD(INST)        (INST & 0x0000F800)>>10
-#define RT(INST)        (INST & 0x001F0000)>>15
-#define RS(INST)        (INST & 0x03E00000)>>20
-#define OPCODE(INST)    (INST & 0xFC000000)>>25
+#define SHAMT(INST)     (INST & 0x000007C0)>>6
+#define RD(INST)        (INST & 0x0000F800)>>11
+#define RT(INST)        (INST & 0x001F0000)>>16
+#define RS(INST)        (INST & 0x03E00000)>>21
+#define OPCODE(INST)    (INST & 0xFC000000)>>26
 #define IMM(INST)       (INST & 0x0000FFFF)
 #define J250(INST)      (INST & 0x03FFFFFF)
 
@@ -86,6 +86,7 @@ typedef struct ID_EX_Struct {
 
 typedef struct EX_MEM_Struct {
     // PC
+    uint32_t REALPC;
     uint32_t NPC;       // branch target address
     
     // Control signals

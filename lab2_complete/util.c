@@ -295,8 +295,8 @@ void pdump() {
         printf("          ");
     }
     printf("|");
-    if (CURRENT_STATE.EX_MEM_pipeline.NPC) {
-        printf("0x%08x", CURRENT_STATE.EX_MEM_pipeline.NPC);
+    if (CURRENT_STATE.EX_MEM_pipeline.REALPC) {
+        printf("0x%08x", CURRENT_STATE.EX_MEM_pipeline.REALPC);
     } else {
         printf("          ");
     }

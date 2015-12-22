@@ -93,6 +93,19 @@ void process_WB();
 uint32_t ALU(int control_line, uint32_t data1, uint32_t data2);
 
 
+extern IF_ID IF_ID_pipeline_buffer;
+extern ID_EX ID_EX_pipeline_buffer;
+extern EX_MEM EX_MEM_pipeline_buffer;
+extern MEM_WB MEM_WB_pipeline_buffer;
+extern bool globaljump;
+extern bool globaljal;
+extern bool globalJumpAndReturn;
+extern uint32_t PC_buffer;
+extern int stallcount;
+extern int stallcount2;
+
+
+
 
 
 #endif
