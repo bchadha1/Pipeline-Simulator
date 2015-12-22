@@ -147,9 +147,12 @@ extern IF/ID IF_ID_pipeline_buffer;
 extern ID/EX ID_EX_pipeline_buffer;
 extern EX/MEM EX_MEM_pipeline_buffer;
 extern MEM/WB MEM_WB_pipeline_buffer;
-bool globaljump;
-bool globaljal;
-bool globalJumpAndReturn
+extern bool globaljump;
+extern bool globaljal;
+extern bool globalJumpAndReturn;
+extern uint32_t PC_buffer;
+extern int stallcount;
+extern int stallcount2;
 
 
 /* For Instructions */

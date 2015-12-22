@@ -36,6 +36,7 @@ void process_instruction(bool forwardingEnabled){
     
     process_IF();
     process_ID();
+    
     process_EX(forwardingEnabled);
     process_MEM(forwardingEnabled);
     process_WB();
@@ -43,10 +44,17 @@ void process_instruction(bool forwardingEnabled){
     
     // buffer -> Current CPU state
     
-    CURRENT_STATE.IF_ID_pipeline = IF_ID_pipeline_buffer;
+    if (!stallcount2) {
+        CURRENT_STATE.IF_ID_pipeline = IF_ID_pipeline_buffer;
+    } else {
+        stallcount2--;
+    }
     CURRENT_STATE.ID_EX_pipeline = ID_EX_pipeline_buffer;
     CURRENT_STATE.EX_MEM_pipeline = EX_MEM_pipeline_buffer;
     CURRENT_STATE.MEM_WB_pipeline = MEM_WB_pipeline_buffer;
+    if (!stallcount) {
+        CURRENT_STATE.PC = PC_buffer;
+    }
     
 }
 
@@ -78,12 +86,17 @@ void process_IF() {
  output:
  **************************************************************/
 void process_ID(){
+    // check stall
+    if (stallcount) {
+        CURRENT_STATE.IF_ID_pipeline.instr = 0; // no-op
+        stallcount--;
+    }
+    
     IF/ID prevIF_ID_pipeline = CURRENT_STATE.IF_ID_pipeline;
     uint32_t inst = prevIF_ID_pipeline.instr;
     
     // control signals
     generate_control_signals(inst);
-    
     
     
     
@@ -112,6 +125,7 @@ void generate_control_signals(uint32_t instr){
     bool jump = false;
     bool jal = false;
     bool jumpandreturn = false;
+    bool ALUinstruction = true;
     
     if (OPCODE(instr) == 0) {                               // R-type
         ID_EX_pipeline_buffer.RegDst = 1;
@@ -132,7 +146,8 @@ void generate_control_signals(uint32_t instr){
             case 0x08:                          // jr
                 jump = true;
                 jumpandreturn = true;
-                // dont care
+                stallcount = 1;
+                ALUinstruction = false;
                 break;
             case 0x27:                          // nor
                 ID_EX_pipeline_buffer.ALUControl = 7;
@@ -162,6 +177,9 @@ void generate_control_signals(uint32_t instr){
         ID_EX_pipeline_buffer.MEM_MemRead = 0;
         ID_EX_pipeline_buffer.MEM_MemWrite = 0;
         ID_EX_pipeline_buffer.WB_RegWrite = 0;
+        stallcount = 1;
+        ALUinstruction = false;
+        
     } else if (OPCODE(instr) == 3){             // jal
         jump = true;
         ID_EX_pipeline_buffer.RegDst = 1;
@@ -172,6 +190,8 @@ void generate_control_signals(uint32_t instr){
         ID_EX_pipeline_buffer.WB_RegWrite = 1;
         ID_EX_pipeline_buffer.WB_MemToReg = 0;
         jal = true;
+        stallcount = 1;
+        ALUinstruction = false;
         
                                                             // I-type
     } else if (OPCODE(instr) == 0x23){          // lw
@@ -183,6 +203,7 @@ void generate_control_signals(uint32_t instr){
         ID_EX_pipeline_buffer.MEM_MemWrite = 0;
         ID_EX_pipeline_buffer.WB_RegWrite = 1;
         ID_EX_pipeline_buffer.WB_MemToReg = 1;
+        ALUinstruction = false;
         
     } else if (OPCODE(instr) == 0x2B){          // sw
         ID_EX_pipeline_buffer.ALUControl = 0;
@@ -191,6 +212,7 @@ void generate_control_signals(uint32_t instr){
         ID_EX_pipeline_buffer.MEM_MemRead = 0;
         ID_EX_pipeline_buffer.MEM_MemWrite = 1;
         ID_EX_pipeline_buffer.WB_RegWrite = 0;
+        ALUinstruction = false;
         
     } else if (OPCODE(instr) == 0x4){           // beq
         D_EX_pipeline_buffer.ALUControl = 1;
@@ -199,6 +221,7 @@ void generate_control_signals(uint32_t instr){
         ID_EX_pipeline_buffer.MEM_MemRead = 0;
         ID_EX_pipeline_buffer.MEM_MemWrite = 0;
         ID_EX_pipeline_buffer.WB_RegWrite = 0;
+        stallcount = 3;
         
     } else if (OPCODE(instr) == 0x5){           // bne
         D_EX_pipeline_buffer.ALUControl = 11;
@@ -207,6 +230,7 @@ void generate_control_signals(uint32_t instr){
         ID_EX_pipeline_buffer.MEM_MemRead = 0;
         ID_EX_pipeline_buffer.MEM_MemWrite = 0;
         ID_EX_pipeline_buffer.WB_RegWrite = 0;
+        stallcount = 3;
         
     } else if (OPCODE(instr) == 0x9){           // addiu
         ID_EX_pipeline_buffer.RegDst = 0;
@@ -267,6 +291,7 @@ void generate_control_signals(uint32_t instr){
         // *TO DO*
         // DO FLUSH
         
+        
         // set jump varibale
         globaljump = true;
     } else {
@@ -285,6 +310,18 @@ void generate_control_signals(uint32_t instr){
         globalJumpAndReturn = false;
     }
     
+    
+    if (ALUinstruction) {
+        if (CURRENT_STATE.ID_EX_pipeline.MEM_MemRead) {
+            if ((CURRENT_STATE.ID_EX_pipeline.inst16_20 == RS(instr)) |(CURRENT_STATE.ID_EX_pipeline.inst16_20 == RT(instr))  ) {
+                if (forwardingEnabled) {
+                    stallcount2 = 1;
+                } else {
+                    stallcount2 = 2;
+                }
+            }
+        }
+    }
 }
 
 
@@ -436,16 +473,16 @@ void process_MEM(bool forwardingEnabled){
     uint32_t inst = prevIF_ID_pipeline.instr;
     
     if (jump) {
-        CURRENT_STATE.PC = ((CURRENT_STATE.PC+4)&0xF0000000) + (J250(inst)<<2);
+        PC_buffer = ((CURRENT_STATE.PC+4)&0xF0000000) + (J250(inst)<<2);
         if (globalJumpAndReturn) {
-            CURRENT_STATE.PC = CURRENT_STATE.REGS[31];
+            PC_buffer = CURRENT_STATE.REGS[31];
         }
         
     } else {
         if (prevEX_MEM_pipeline.zero & prevEX_MEM_pipeline.Branch) {
-            CURRENT_STATE.PC = prevEX_MEM_pipeline.NPC;
+            PC_buffer = prevEX_MEM_pipeline.NPC;
         } else {
-            CURRENT_STATE.PC += 4;
+            PC_buffer = CURRENT_STATE + 4;
         }
     }
     
@@ -531,162 +568,3 @@ uint32_t ALU(int control_line, uint32_t data1, uint32_t data2)) {
 
 
 
-// ALU Control is not used!
-/*
-// outputs ALU control line (textbook page 247)
-int ALU_control(int funct_field, bool ALUOp0, bool ALUOp1) {
-    if (ALUOp0 == 0 && ALUOp1 == 0) {
-        return 2;                                               // 0010
-    } else if (ALUOp0 == 1) {
-        return 6;                                               // 0110
-    } else { // ALUOp1 = 1
-        funct_field = funct_field & 15; // mask last 4 digits
-        if (funct_field == 0) {
-            return 2;                                           // 0010
-        } else if (funct_field == 2) {
-            return 6;                                           // 0110
-        } else if (funct_field == 4) {
-            return 0;                                           // 0000
-        } else if (funct_field == 5) {
-            return 1;                                           // 0001
-        } else if (funct_field == 10) {
-            return 7;                                           // 0111
-        } else {
-            printf("Error in ALU_control. func_field value is %d", funct_field);
-        }
-    }
-}
-*/
-
-
-
-
-
-
-#ifdef ORIGINAL
-void process_instruction(){
-    instruction *inst;
-    int i;		// for loop
-
-    /* pipeline */
-    for ( i = PIPE_STAGE - 1; i > 0; i--)
-	CURRENT_STATE.PIPE[i] = CURRENT_STATE.PIPE[i-1];
-    CURRENT_STATE.PIPE[0] = CURRENT_STATE.PC;
-
-    inst = get_inst_info(CURRENT_STATE.PC);
-    CURRENT_STATE.PC += BYTES_PER_WORD;
-
-    switch (OPCODE(inst))
-    {
-	case 0x9:		//(0x001001)ADDIU
-	    CURRENT_STATE.REGS[RT (inst)] = CURRENT_STATE.REGS[RS (inst)] + (short) IMM (inst);
-	    break;
-	case 0xc:		//(0x001100)ANDI
-	    CURRENT_STATE.REGS[RT (inst)] = CURRENT_STATE.REGS[RS (inst)] & (0xffff & IMM (inst));
-	    break;
-	case 0xf:		//(0x001111)LUI	
-	    CURRENT_STATE.REGS[RT (inst)] = (IMM (inst) << 16) & 0xffff0000;
-	    break;
-	case 0xd:		//(0x001101)ORI
-	    CURRENT_STATE.REGS[RT (inst)] = CURRENT_STATE.REGS[RS (inst)] | (0xffff & IMM (inst));
-	    break;
-	case 0xb:		//(0x001011)SLTIU 
-	    {
-		int x = (short) IMM (inst);
-
-		if ((uint32_t) CURRENT_STATE.REGS[RS (inst)] < (uint32_t) x)
-		    CURRENT_STATE.REGS[RT (inst)] = 1;
-		else
-		    CURRENT_STATE.REGS[RT (inst)] = 0;
-		break;
-	    }
-	case 0x23:		//(0x100011)LW	
-	    LOAD_INST (&CURRENT_STATE.REGS[RT (inst)], mem_read_32((CURRENT_STATE.REGS[BASE (inst)] + IOFFSET (inst))), 0xffffffff);
-	    break;
-	case 0x2b:		//(0x101011)SW
-	    mem_write_32(CURRENT_STATE.REGS[BASE (inst)] + IOFFSET (inst), CURRENT_STATE.REGS[RT (inst)]);
-	    break;
-	case 0x4:		//(0x000100)BEQ
-	    BRANCH_INST (CURRENT_STATE.REGS[RS (inst)] == CURRENT_STATE.REGS[RT (inst)], CURRENT_STATE.PC + IDISP (inst), 0);
-	    break;
-	case 0x5:		//(0x000101)BNE
-	    BRANCH_INST (CURRENT_STATE.REGS[RS (inst)] != CURRENT_STATE.REGS[RT (inst)], CURRENT_STATE.PC + IDISP (inst), 0);
-	    break;
-
-	case 0x0:		//(0x000000)ADDU, AND, NOR, OR, SLTU, SLL, SRL, SUBU  if JR
-	    {
-		switch(FUNC (inst)){
-		    case 0x21:	//ADDU
-			CURRENT_STATE.REGS[RD (inst)] = CURRENT_STATE.REGS[RS (inst)] + CURRENT_STATE.REGS[RT (inst)];
-			break;
-		    case 0x24:	//AND
-			CURRENT_STATE.REGS[RD (inst)] = CURRENT_STATE.REGS[RS (inst)] & CURRENT_STATE.REGS[RT (inst)];
-			break;
-		    case 0x27:	//NOR
-			CURRENT_STATE.REGS[RD (inst)] = ~ (CURRENT_STATE.REGS[RS (inst)] | CURRENT_STATE.REGS[RT (inst)]);
-			break;
-		    case 0x25:	//OR
-			CURRENT_STATE.REGS[RD (inst)] = CURRENT_STATE.REGS[RS (inst)] | CURRENT_STATE.REGS[RT (inst)];
-			break;
-		    case 0x2B:	//SLTU
-			if ( CURRENT_STATE.REGS[RS (inst)] <  CURRENT_STATE.REGS[RT (inst)])
-			    CURRENT_STATE.REGS[RD (inst)] = 1;
-			else
-			    CURRENT_STATE.REGS[RD (inst)] = 0;
-			break;
-		    case 0x0:	//SLL
-			{
-			    int shamt = SHAMT (inst);
-
-			    if (shamt >= 0 && shamt < 32)
-				CURRENT_STATE.REGS[RD (inst)] = CURRENT_STATE.REGS[RT (inst)] << shamt;
-			    else
-				CURRENT_STATE.REGS[RD (inst)] = CURRENT_STATE.REGS[RT (inst)];
-			    break;
-			}
-		    case 0x2:	//SRL
-			{
-			    int shamt = SHAMT (inst);
-			    uint32_t val = CURRENT_STATE.REGS[RT (inst)];
-
-			    if (shamt >= 0 && shamt < 32)
-				CURRENT_STATE.REGS[RD (inst)] = val >> shamt;
-			    else
-				CURRENT_STATE.REGS[RD (inst)] = val;
-			    break;
-			}
-		    case 0x23:	//SUBU
-			CURRENT_STATE.REGS[RD(inst)] = CURRENT_STATE.REGS[RS(inst)]-CURRENT_STATE.REGS[RT(inst)];
-			break;
-
-		    case 0x8:	//JR
-			{
-			    uint32_t tmp = CURRENT_STATE.REGS[RS (inst)];
-			    JUMP_INST (tmp);
-
-			    break;
-			}
-		    default:
-			printf("Unknown function code type: %d\n", FUNC(inst));
-			break;
-		}
-	    }
-	    break;
-
-	case 0x2:		//(0x000010)J
-	    JUMP_INST (((CURRENT_STATE.PC & 0xf0000000) | TARGET (inst) << 2));
-	    break;
-	case 0x3:		//(0x000011)JAL
-	    CURRENT_STATE.REGS[31] = CURRENT_STATE.PC;
-	    JUMP_INST (((CURRENT_STATE.PC & 0xf0000000) | (TARGET (inst) << 2)));
-	    break;
-
-	default:
-	    printf("Unknown instruction type: %d\n", OPCODE(inst));
-	    break;
-    }
-
-    if (CURRENT_STATE.PC < MEM_REGIONS[0].start || CURRENT_STATE.PC >= (MEM_REGIONS[0].start + (NUM_INST * 4)))
-	RUN_BIT = FALSE;
-}
-#endif
