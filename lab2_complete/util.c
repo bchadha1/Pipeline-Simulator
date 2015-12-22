@@ -283,25 +283,25 @@ void pdump() {
         printf("          ");
     }
     printf("|");
-    if (CURRENT_STATE.PC) {
+    if (CURRENT_STATE.IF_ID_pipeline.NPC) {
         printf("0x%08x", CURRENT_STATE.IF_ID_pipeline.NPC);
     } else {
         printf("          ");
     }
     printf("|");
-    if (CURRENT_STATE.PC) {
+    if (CURRENT_STATE.ID_EX_pipeline.NPC) {
         printf("0x%08x", CURRENT_STATE.ID_EX_pipeline.NPC);
     } else {
         printf("          ");
     }
     printf("|");
-    if (CURRENT_STATE.PC) {
+    if (CURRENT_STATE.EX_MEM_pipeline.NPC) {
         printf("0x%08x", CURRENT_STATE.EX_MEM_pipeline.NPC);
     } else {
         printf("          ");
     }
     printf("|");
-    if (CURRENT_STATE.PC) {
+    if (CURRENT_STATE.MEM_WB_pipeline.NPC) {
         printf("0x%08x", CURRENT_STATE.MEM_WB_pipeline.NPC);
     } else {
         printf("          ");
