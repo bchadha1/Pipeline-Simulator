@@ -16,7 +16,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
-
+#include "run.h"
 
 #define FALSE 0
 #define TRUE  1
@@ -33,7 +33,7 @@
 
 
 // instruction information extracting macros
-#define FUNCT(INST)     (INST & 0x0000001F)
+#define FUNCT(INST)     (INST & 0x0000003F)
 #define SHAMT(INST)     (INST & 0x000007C0)>>6
 #define RD(INST)        (INST & 0x0000F800)>>11
 #define RT(INST)        (INST & 0x001F0000)>>16
@@ -48,6 +48,7 @@
 typedef struct IF_ID_Struct {
     // PC
     uint32_t NPC;
+    uint32_t CURRENTPC;
     
     // reg
     uint32_t instr;
@@ -58,6 +59,7 @@ typedef struct IF_ID_Struct {
 typedef struct ID_EX_Struct {
     // PC
     uint32_t NPC;
+    uint32_t CURRENTPC;
     
     // Control Signals
     bool WB_MemToReg;   // WB
@@ -75,19 +77,22 @@ typedef struct ID_EX_Struct {
     
     
     // reg
-    uint32_t REG1;      // rs
-    uint32_t REG2;      // rt
-    uint32_t IMM; // immediate value
+    uint32_t REG1;      // Reg[rs]
+    uint32_t REG2;      // Reg[rt]
+    uint32_t IMM; 		// immediate value
     
-    uint32_t inst16_20;
-    uint32_t inst11_15;
+    uint32_t RS;		// rs, inst[21:25]
+    uint32_t RT;		// rt, inst[16:20]
+    uint32_t RD;		// rd, inst[11:15]
+    
+    uint32_t instr_debug;
     
 } ID_EX;
 
 typedef struct EX_MEM_Struct {
     // PC
-    uint32_t REALPC;
     uint32_t NPC;       // branch target address
+    uint32_t CURRENTPC;
     
     // Control signals
     bool WB_MemToReg; // WB
@@ -104,12 +109,13 @@ typedef struct EX_MEM_Struct {
     uint32_t ALU_OUT;
     uint32_t data2;             // untouched data2 from register.
     uint32_t RegDstNum;         // 5 bit Register destination (if write)
-    
+    uint32_t instr_debug;
 } EX_MEM;
 
 typedef struct MEM_WB_Struct {
     // PC
-    uint32_t NPC; 
+    uint32_t NPC;
+    uint32_t CURRENTPC;
     
     // Control signals
     bool MemRead;
@@ -121,7 +127,7 @@ typedef struct MEM_WB_Struct {
     uint32_t ALU_OUT;
     
     uint32_t RegDstNum;         // 5 bit Register destination (if write)
-    
+    uint32_t instr_debug;
 } MEM_WB;
 
 
@@ -156,9 +162,11 @@ MEM_WB MEM_WB_pipeline_buffer;
 bool globaljump;
 bool globaljal;
 bool globalJumpAndReturn;
+bool branchFlush;
 uint32_t PC_buffer;
-int stallcount;
-int stallcount2;
+uint32_t PC_jump;
+int stall_IF_ID_count; // stall count for stalling IF stage only
+int stall_ID_EX_count; // stall count for stalling IF, ID stages
 
 
 /* For Instructions */
@@ -177,17 +185,15 @@ char**		str_split(char *a_str, const char a_delim);
 int		fromBinary(char *s);
 uint32_t	mem_read_32(uint32_t address);
 void		mem_write_32(uint32_t address, uint32_t value);
-void        cycle(bool forwardingEnabled);
-void		run(int num_cycles, bool forwardingEnabled);
-void		go(bool forwardingEnabled);
+void		cycle(bool forwardingEnabled, bool branchPredictionEnabled);
+void		run(int num_cycles, bool forwardingEnabled, bool branchPredictionEnabled);
+void		go(bool forwardingEnabled, bool branchPredictionEnabled);
 void		mdump(int start, int stop);
 void		rdump();
 void        pdump();
 void		init_memory();
 void		init_inst_info();
 
-
-extern void process_instruction(bool forwardingEnabled);
-
+extern void process_instruction(bool forwardingEnabled, bool branchPredictionEnabled);
 
 #endif

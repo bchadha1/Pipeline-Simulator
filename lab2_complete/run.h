@@ -44,6 +44,7 @@
 
 /* Sign Extension */
 #define SIGN_EX(X) (((X) & 0x8000) ? ((X) | 0xffff0000) : (X))
+#define ZERO_EX(X) (X)
 
 #define COND_UN		0x1
 #define COND_EQ		0x2
@@ -59,53 +60,38 @@
 
 #define BRANCH_INST(TEST, TARGET, NULLIFY)	\
 {						\
-    if (TEST)					\
-    {						\
-	uint32_t target = (TARGET);		\
-	JUMP_INST(target)			\
-    }						\
+if (TEST)					\
+{						\
+uint32_t target = (TARGET);		\
+JUMP_INST(target)			\
+}						\
 }
 
 #define JUMP_INST(TARGET)			\
 {						\
-    CURRENT_STATE.PC = (TARGET);		\
+CURRENT_STATE.PC = (TARGET);		\
 }
 
 #define LOAD_INST(DEST_A, LD, MASK)		\
 {						\
-    LOAD_INST_BASE (DEST_A, (LD & (MASK)))	\
+LOAD_INST_BASE (DEST_A, (LD & (MASK)))	\
 }
 
 #define LOAD_INST_BASE(DEST_A, VALUE)		\
 {						\
-    *(DEST_A) = (VALUE);			\
+*(DEST_A) = (VALUE);			\
 }
 
 /* functions */
 uint32_t get_inst_info(uint32_t pc);
-void process_instruction(bool forwardingEnabled);
+void process_instruction(bool forwardingEnabled, bool branchPredictionEnabled);
 void process_IF();
-void process_ID(bool forwardingEnabled);
-void generate_control_signals(uint32_t instr, bool forwardingEnabled);
+void process_ID(bool forwardingEnabled, bool branchPredictionEnabled);
+void generate_control_signals(uint32_t instr, bool forwardingEnabled, bool branchPredictionEnabled);
 void process_EX(bool forwardingEnabled);
-void process_MEM(bool forwardingEnabled);
+void process_MEM(bool forwardingEnabled, bool branchPredictionEnabled);
 void process_WB();
 uint32_t ALU(int control_line, uint32_t data1, uint32_t data2);
-
-
-extern IF_ID IF_ID_pipeline_buffer;
-extern ID_EX ID_EX_pipeline_buffer;
-extern EX_MEM EX_MEM_pipeline_buffer;
-extern MEM_WB MEM_WB_pipeline_buffer;
-extern bool globaljump;
-extern bool globaljal;
-extern bool globalJumpAndReturn;
-extern uint32_t PC_buffer;
-extern int stallcount;
-extern int stallcount2;
-
-
-
 
 
 #endif
