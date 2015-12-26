@@ -196,4 +196,13 @@ void		init_inst_info();
 
 extern void process_instruction(bool forwardingEnabled, bool branchPredictionEnabled);
 
+/* flush functions */
+void flush_IF_ID();
+void flush_ID_EX();
+void flush_EX_MEM();
+
+
+
+
+
 #endif

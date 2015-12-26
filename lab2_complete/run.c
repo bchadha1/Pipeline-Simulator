@@ -574,13 +574,17 @@ uint32_t ALU(int control_line, uint32_t data1, uint32_t data2) {
     return 0;
 }
 
-flush_IF_ID(){
+
+
+
+// Flush functions
+void flush_IF_ID(){
     CURRENT_STATE.IF_ID_pipeline.NPC = 0;
     CURRENT_STATE.IF_ID_pipeline.CURRENTPC = 0;
     CURRENT_STATE.IF_ID_pipeline.instr = 0;
 }
 
-flush_ID_EX(){
+void flush_ID_EX(){
     CURRENT_STATE.ID_EX_pipeline.NPC = 0;
     CURRENT_STATE.ID_EX_pipeline.CURRENTPC = 0;
     CURRENT_STATE.ID_EX_pipeline.WB_MemToReg = false;
@@ -600,7 +604,7 @@ flush_ID_EX(){
     CURRENT_STATE.ID_EX_pipeline.instr_debug = 0;
 }
 
-flush_EX_MEM(){
+void flush_EX_MEM(){
     CURRENT_STATE.EX_MEM_pipeline.NPC = 0;
     CURRENT_STATE.EX_MEM_pipeline.CURRENTPC = 0;
     CURRENT_STATE.EX_MEM_pipeline.WB_MemToReg = false;
