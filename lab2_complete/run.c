@@ -12,7 +12,7 @@
 #include "util.h"
 #include "run.h"
 
-int IsDebug = 1; // for printing debugging outputs
+int IsDebug = 0; // for printing debugging outputs
 
 /***************************************************************/
 /*                                                             */
@@ -54,6 +54,9 @@ void process_instruction(bool forwardingEnabled, bool branchPredictionEnabled){
     // when both are enabled. We shouldn't flush IF/ID pipeline.
     if(stall_ID_EX_count) flush_ID_EX();
     
+    process_IF();
+    process_WB();
+    
     if(branchFlush){
         if (IsDebug) printf("branchFlush is activated. Flushing IF/ID, ID/EX, EX/MEM... \n");
         flush_IF_ID();
@@ -62,8 +65,7 @@ void process_instruction(bool forwardingEnabled, bool branchPredictionEnabled){
         branchFlush = false;
     }
     
-    process_IF();
-    process_WB();
+    
     
     
     
@@ -131,16 +133,17 @@ void process_ID(bool forwardingEnabled, bool branchPredictionEnabled){
     ID_EX_pipeline_buffer.RS = RS(inst); // inst [21-25]
     ID_EX_pipeline_buffer.RT = RT(inst); // inst [16-20]
     ID_EX_pipeline_buffer.RD = RD(inst); // inst [11-15]
+    ID_EX_pipeline_buffer.SHAMT = SHAMT(inst);
     
     if (globaljal) {
         ID_EX_pipeline_buffer.REG1 = 0;
         ID_EX_pipeline_buffer.REG2 = 0;
-        ID_EX_pipeline_buffer.IMM = CURRENT_STATE.PC+4;
+        ID_EX_pipeline_buffer.IMM = CURRENT_STATE.PC;
         ID_EX_pipeline_buffer.RD = 31;
     }
     if(IsDebug){
         printf("*debug process_ID: CURRENTPC 0x%08x, instr 0x%08x\n", ID_EX_pipeline_buffer.CURRENTPC, inst);
-        printf("    RS %d, REG1 %d, RT %d, REG2 %d, RD %d, imm %08x\n", RS(inst), ID_EX_pipeline_buffer.REG1, RT(inst), ID_EX_pipeline_buffer.REG2, RD(inst), ID_EX_pipeline_buffer.IMM);
+        printf("    RS %d, REG1 %d, RT %d, REG2 %d, RD %d, imm %08x, shamt %d\n", RS(inst), ID_EX_pipeline_buffer.REG1, RT(inst), ID_EX_pipeline_buffer.REG2, RD(inst), ID_EX_pipeline_buffer.IMM, ID_EX_pipeline_buffer.SHAMT);
     }
 }
 
@@ -150,6 +153,7 @@ void generate_control_signals(uint32_t instr, bool forwardingEnabled, bool branc
     bool jal = false;
     bool jumpandreturn = false;
     bool ALUinstruction = true;
+    
     
     if (OPCODE(instr) == 0) {                               // R-type
         ID_EX_pipeline_buffer.RegDst = 1;
@@ -539,10 +543,17 @@ void process_EX(bool forwardingEnabled){
     int funct_field = (prevID_EX_pipeline.IMM & 63); // extract funct field from instruction[0~15]
     int control_line = prevID_EX_pipeline.ALUControl;
     
+    // Special case for shift commands (srl, sll)
+    if ((control_line == 4) || (control_line == 5)) {
+        ALUinput1 = SHAMT(prevID_EX_pipeline.instr_debug);
+    }
+    
+    
     // process ALU
     uint32_t ALUresult = ALU(control_line, ALUinput1, ALUinput2);
     EX_MEM_pipeline_buffer.zero = !ALUresult;
     EX_MEM_pipeline_buffer.ALU_OUT = ALUresult;
+    if (IsDebug) printf("ALU result is : %d\n", ALUresult);
     
     // Mux for Write Register
     // if RegDst == 1, the register destination number for the Write register comes from the rd field.(bits 15:11)
@@ -571,7 +582,10 @@ void process_MEM(bool forwardingEnabled, bool branchPredictionEnabled){
     // branching
     if(prevEX_MEM_pipeline.Branch) { // branch condition
         if(prevEX_MEM_pipeline.zero){
-            PC_jump = prevEX_MEM_pipeline.NPC;
+            // if the branch Prediction was enabled, this is handled by generatecontrolsignal in ID stage.
+            if (!branchPredictionEnabled) {
+                PC_jump = prevEX_MEM_pipeline.NPC;
+            }
         } else {
             if (IsDebug) printf("Branch prediction failed!!!!\n");
             if(branchPredictionEnabled) branchFlush = true;
@@ -643,9 +657,9 @@ uint32_t ALU(int control_line, uint32_t data1, uint32_t data2) {
     } else if (control_line == 3) { // 0011 : OR
         return data1 | data2;
     } else if (control_line == 4) { // 0100 : SLL (shift left logical)
-        return data1 << data2;
+        return (data2 << data1);
     } else if (control_line == 5) { // 0101 : SRL (shift right logical)
-        return data1 >> data2;
+        return (data2 >> data1);
     } else if (control_line == 7) { // 0111 : NOR
         return ~(data1 | data2);
     } else if (control_line == 8) { // 1000 : SLT (set on less than)

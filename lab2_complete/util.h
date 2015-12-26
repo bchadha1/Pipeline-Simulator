@@ -84,6 +84,7 @@ typedef struct ID_EX_Struct {
     uint32_t RS;		// rs, inst[21:25]
     uint32_t RT;		// rt, inst[16:20]
     uint32_t RD;		// rd, inst[11:15]
+    uint32_t SHAMT;     // shamt, inst[6:10]
     
     uint32_t instr_debug;
     
