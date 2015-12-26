@@ -164,6 +164,7 @@ bool globaljump;
 bool globaljal;
 bool globalJumpAndReturn;
 bool branchFlush;
+bool reachedEnd;
 uint32_t PC_buffer;
 uint32_t PC_jump;
 int stall_IF_ID_count; // stall count for stalling IF stage only
@@ -173,6 +174,7 @@ int stall_ID_EX_count; // stall count for stalling IF, ID stages
 /* For Instructions */
 extern uint32_t *INST_INFO;
 extern int NUM_INST;
+extern int TEXT_SIZE;
 
 /* For Memory Regions */
 extern mem_region_t MEM_REGIONS[2];

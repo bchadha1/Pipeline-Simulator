@@ -34,6 +34,7 @@ int CYCLE_COUNT;
 /***************************************************************/
 uint32_t *INST_INFO;
 int NUM_INST;
+int TEXT_SIZE;
 
 /***************************************************************/
 /*                                                             */
@@ -203,6 +204,13 @@ void run(int num_inst, bool forwardingEnabled, bool branchPredictionEnabled) {
             printf("Simulator halted\n\n");
             break;
         }
+        if (reachedEnd) {
+            cycle(forwardingEnabled, branchPredictionEnabled);
+            cycle(forwardingEnabled, branchPredictionEnabled);
+            cycle(forwardingEnabled, branchPredictionEnabled);
+            cycle(forwardingEnabled, branchPredictionEnabled);
+            break;
+        }
         cycle(forwardingEnabled, branchPredictionEnabled);
     }
 }
@@ -278,9 +286,11 @@ void pdump() {
     printf("-------------------------------------\n");
     printf("CYCLE %d:", CYCLE_COUNT );
     
-    if(CURRENT_STATE.PC)
+    if ((!CURRENT_STATE.PC) || ((CURRENT_STATE.PC - MEM_TEXT_START) >> 2) >= TEXT_SIZE) {
+        printf("          ");
+    } else {
         printf("0x%08x", CURRENT_STATE.PC);
-    else printf("          ");
+    }
     printf("|");
     if(CURRENT_STATE.IF_ID_pipeline.CURRENTPC) printf("0x%08x", CURRENT_STATE.IF_ID_pipeline.CURRENTPC);
     else printf("          ");

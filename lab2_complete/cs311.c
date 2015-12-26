@@ -87,6 +87,8 @@ void load_program(char *program_filename) {
         }
         flag++;
     }
+    TEXT_SIZE = text_index;
+    
     PC_buffer = MEM_TEXT_START;
     //printf("Read %d words from program into memory.\n\n", ii/4);
 }
@@ -179,6 +181,15 @@ int main(int argc, char *argv[]) {
         for(INSTRUCTION_COUNT = 0; INSTRUCTION_COUNT < i;){
             if (RUN_BIT == FALSE){
                 printf("Simulator halted\n\n");
+                break;
+            }
+            if (reachedEnd) {
+                for (int k=0; k<3; k++) {
+                    cycle(forwardingEnabled, branchPredictionEnabled);
+                    if(pipe_dump_set) pdump();
+                    if(debug_set) rdump();
+                    if(mem_dump_set) mdump(addr1, addr2);
+                }
                 break;
             }
             cycle(forwardingEnabled, branchPredictionEnabled);

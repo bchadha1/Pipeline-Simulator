@@ -23,6 +23,16 @@ int IsDebug = 0; // for printing debugging outputs
 /***************************************************************/
 uint32_t get_inst_info(uint32_t pc)
 {
+    if (IsDebug) {
+        printf("get_inst_info :  pc value is : 0x%08x, this is : %d, text size is  %d\n", pc, ((pc - MEM_TEXT_START) >> 2),  TEXT_SIZE );
+    }
+    if (((pc - MEM_TEXT_START) >> 2) >= TEXT_SIZE) {
+        CURRENT_STATE.PC = 0;
+        IF_ID_pipeline_buffer.CURRENTPC = 0;
+        //CURRENT_STATE.IF_ID_pipeline.CURRENTPC = 0;
+        reachedEnd = true;
+        return 0;
+    }
     return INST_INFO[(pc - MEM_TEXT_START) >> 2];
 }
 
@@ -36,12 +46,12 @@ uint32_t get_inst_info(uint32_t pc)
 void process_instruction(bool forwardingEnabled, bool branchPredictionEnabled){
     
     // buffer -> Current CPU state
-    if(PC_jump){
+    if(PC_jump && !reachedEnd){
         if (IsDebug) printf("PC jump has value : 0x%08x\n", PC_jump);
         CURRENT_STATE.PC = PC_jump;
         PC_jump = 0;
     } else {
-        if(!stall_ID_EX_count) CURRENT_STATE.PC = PC_buffer;
+        if(!stall_ID_EX_count && !reachedEnd) CURRENT_STATE.PC = PC_buffer;
     }
     
     if(!stall_ID_EX_count) CURRENT_STATE.IF_ID_pipeline = IF_ID_pipeline_buffer;
