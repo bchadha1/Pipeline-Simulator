@@ -42,15 +42,18 @@ void process_instruction(bool forwardingEnabled, bool branchPredictionEnabled){
     }
     if(!stall_ID_EX_count && !stall_IF_ID_count) CURRENT_STATE.PC = PC_buffer;
     if(!stall_ID_EX_count) CURRENT_STATE.IF_ID_pipeline = IF_ID_pipeline_buffer;
+    
     CURRENT_STATE.ID_EX_pipeline = ID_EX_pipeline_buffer;
     CURRENT_STATE.EX_MEM_pipeline = EX_MEM_pipeline_buffer;
     CURRENT_STATE.MEM_WB_pipeline = MEM_WB_pipeline_buffer;
     
-    if(stall_IF_ID_count) flush_IF_ID();
-    
+    if(stall_IF_ID_count && !stall_ID_EX_count) flush_IF_ID();
+    // when both are enabled. We shouldn't flush IF/ID pipeline.
     if(stall_ID_EX_count) flush_ID_EX();
     
     if(branchFlush){
+        //printf("LOOK HERE@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+        //printf("branchFlush is activated. Flushing IF/ID, ID/EX, EX/MEM... \n");
         flush_IF_ID();
         flush_ID_EX();
         flush_EX_MEM();
@@ -59,9 +62,13 @@ void process_instruction(bool forwardingEnabled, bool branchPredictionEnabled){
     
     process_IF();
     process_WB();
-    process_EX(forwardingEnabled);
-    process_ID(forwardingEnabled, branchPredictionEnabled);
+    
+    
+    
+    process_ID(forwardingEnabled, branchPredictionEnabled); // Data Hazards are detected here (if forwarding is not enabled)
+    process_EX(forwardingEnabled);                          // Data Forwarding is done here (if fowarding is enabled)
     process_MEM(forwardingEnabled, branchPredictionEnabled);
+    
     
     if(stall_ID_EX_count) stall_ID_EX_count--;
     if(stall_IF_ID_count) stall_IF_ID_count--;
@@ -100,8 +107,10 @@ void process_ID(bool forwardingEnabled, bool branchPredictionEnabled){
     IF_ID prevIF_ID_pipeline = CURRENT_STATE.IF_ID_pipeline;
     ID_EX_pipeline_buffer.NPC = prevIF_ID_pipeline.NPC;
     ID_EX_pipeline_buffer.CURRENTPC = prevIF_ID_pipeline.CURRENTPC;
+    
     uint32_t inst = prevIF_ID_pipeline.instr;
     ID_EX_pipeline_buffer.instr_debug = inst;
+    
     
     // control signals
     generate_control_signals(inst, forwardingEnabled, branchPredictionEnabled);
@@ -319,6 +328,86 @@ void generate_control_signals(uint32_t instr, bool forwardingEnabled, bool branc
         globalJumpAndReturn = false;
     }
     
+    if (!forwardingEnabled) {
+        // EX hazard
+        if (CURRENT_STATE.ID_EX_pipeline.WB_RegWrite) {
+            uint32_t tempRegDstNum;
+            if (CURRENT_STATE.ID_EX_pipeline.RegDst) {
+                tempRegDstNum = CURRENT_STATE.ID_EX_pipeline.RD;
+            } else {
+                tempRegDstNum = CURRENT_STATE.ID_EX_pipeline.RT;
+            }
+            
+            if (tempRegDstNum != 0) {
+                if (tempRegDstNum == RS(instr)) {
+                    if(IsDebug) printf("generate_control signal : EX Hazard detected!!!!! \n");
+                    stall_ID_EX_count = 1+2;
+                }
+                if (tempRegDstNum == RT(instr)) {
+                    if(IsDebug) printf("generate_control signal : EX Hazard detected!!!!! \n");
+                    stall_ID_EX_count = 1+2;
+                }
+            }
+        }
+
+        
+        // MEM hazard
+        
+        if (CURRENT_STATE.EX_MEM_pipeline.WB_RegWrite) {
+            if (CURRENT_STATE.EX_MEM_pipeline.RegDstNum != 0) {
+                
+                uint32_t tempRegDstNum; // ID/EX's RegDstNum
+                if (CURRENT_STATE.ID_EX_pipeline.RegDst) {
+                    tempRegDstNum = CURRENT_STATE.ID_EX_pipeline.RD;
+                } else {
+                    tempRegDstNum = CURRENT_STATE.ID_EX_pipeline.RT;
+                }
+                
+                
+                if (!(CURRENT_STATE.ID_EX_pipeline.WB_RegWrite && (tempRegDstNum !=0) && (tempRegDstNum == RS(instr)))) {
+                    if (CURRENT_STATE.EX_MEM_pipeline.RegDstNum == RS(instr)) {
+                        if(IsDebug) printf("generate_control signal : MEM Hazard detected!!!!! \n");
+                        stall_ID_EX_count = 1+1;
+                    }
+                }
+                
+                if (!(CURRENT_STATE.ID_EX_pipeline.WB_RegWrite && (tempRegDstNum !=0) && (tempRegDstNum == RT(instr)))) {
+                    
+                    if (CURRENT_STATE.EX_MEM_pipeline.RegDstNum == RT(instr)) {
+                        if(IsDebug) printf("generate_control signal : MEM Hazard detected!!!!! \n");
+                        stall_ID_EX_count = 1+1;
+                    }
+                }
+            }
+        }
+        
+        
+        // original
+        /*
+        if (CURRENT_STATE.MEM_WB_pipeline.RegWrite) {
+            if (CURRENT_STATE.MEM_WB_pipeline.RegDstNum != 0) {
+                if (!(CURRENT_STATE.EX_MEM_pipeline.WB_RegWrite && (CURRENT_STATE.EX_MEM_pipeline.RegDstNum !=0) && (CURRENT_STATE.EX_MEM_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.RS))) {
+                    
+                    if (CURRENT_STATE.MEM_WB_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.RS) {
+                        if(IsDebug) printf("generate_control signal : MEM Hazard detected!!!!! \n");
+                        stall_IF_ID_count = 1+2;
+                    }
+                }
+                
+                if (!(CURRENT_STATE.EX_MEM_pipeline.WB_RegWrite && (CURRENT_STATE.EX_MEM_pipeline.RegDstNum !=0) && (CURRENT_STATE.EX_MEM_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.RT))) {
+                    
+                    if (CURRENT_STATE.MEM_WB_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.RT) {
+                        if(IsDebug) printf("generate_control signal : MEM Hazard detected!!!!! \n");
+                        stall_IF_ID_count = 1+2;
+                    }
+                }
+            }
+        }
+         */
+    }
+    
+    
+    
     // ALU operation followed by lw instruction
     if (ALUinstruction) {
         if (CURRENT_STATE.ID_EX_pipeline.MEM_MemRead) {
@@ -363,16 +452,18 @@ void process_EX(bool forwardingEnabled){
     int forwardB = 00;
     
     // Forwarding unit.
-    // EX hazard
     if (forwardingEnabled) {
-        
         if(IsDebug) printf("RegDstNum %d, RS %d, RT %d\n", CURRENT_STATE.EX_MEM_pipeline.RegDstNum, CURRENT_STATE.ID_EX_pipeline.RS, CURRENT_STATE.ID_EX_pipeline.RT);
+        
+        // EX hazard
         if (CURRENT_STATE.EX_MEM_pipeline.WB_RegWrite) {
             if (CURRENT_STATE.EX_MEM_pipeline.RegDstNum != 0) {
                 if (CURRENT_STATE.EX_MEM_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.RS) {
+                    if(IsDebug) printf("EX Hazard detected!!!!! \n");
                     forwardA = 10;
                 }
                 if (CURRENT_STATE.EX_MEM_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.RT) {
+                    if(IsDebug) printf("EX Hazard detected!!!!! \n");
                     forwardB = 10;
                 }
             }
@@ -384,6 +475,7 @@ void process_EX(bool forwardingEnabled){
                 if (!(CURRENT_STATE.EX_MEM_pipeline.WB_RegWrite && (CURRENT_STATE.EX_MEM_pipeline.RegDstNum !=0) && (CURRENT_STATE.EX_MEM_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.RS))) {
                     
                     if (CURRENT_STATE.MEM_WB_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.RS) {
+                        if(IsDebug) printf("MEM Hazard detected!!!!! \n");
                         forwardA = 01;
                     }
                 }
@@ -391,6 +483,7 @@ void process_EX(bool forwardingEnabled){
                 if (!(CURRENT_STATE.EX_MEM_pipeline.WB_RegWrite && (CURRENT_STATE.EX_MEM_pipeline.RegDstNum !=0) && (CURRENT_STATE.EX_MEM_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.RT))) {
                     
                     if (CURRENT_STATE.MEM_WB_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.RT) {
+                        if(IsDebug) printf("MEM Hazard detected!!!!! \n");
                         forwardB = 01;
                     }
                 }
@@ -398,6 +491,8 @@ void process_EX(bool forwardingEnabled){
         }
         
     } // end of "forwardingEnabled"
+    
+    
     
     
     

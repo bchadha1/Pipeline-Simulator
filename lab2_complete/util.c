@@ -278,7 +278,7 @@ void pdump() {
     printf("-------------------------------------\n");
     printf("CYCLE %d:", CYCLE_COUNT );
     
-    if(CURRENT_STATE.PC && (!stall_ID_EX_count) && (!stall_IF_ID_count))
+    if(CURRENT_STATE.PC)
         printf("0x%08x", CURRENT_STATE.PC);
     else printf("          ");
     printf("|");
