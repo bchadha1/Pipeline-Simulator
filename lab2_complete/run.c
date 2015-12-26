@@ -195,7 +195,7 @@ void generate_control_signals(uint32_t instr, bool forwardingEnabled, bool branc
                 ID_EX_pipeline_buffer.ALUControl = 1;
                 break;
             default:
-                printf("Unrecognized input in 'generate_control_signals' with input : %08x", instr);
+                printf("Unrecognized input in 'generate_control_signals' with input : %08x\n", instr);
                 break;
         }                                                   // J-type
     } else if (OPCODE(instr) == 2){             // j
@@ -319,7 +319,7 @@ void generate_control_signals(uint32_t instr, bool forwardingEnabled, bool branc
         ID_EX_pipeline_buffer.WB_MemToReg = 0;
         
     } else {
-        printf("Unrecognized OPCODE : %d", OPCODE(instr));
+        printf("Unrecognized OPCODE : %d\n", OPCODE(instr));
     }
     
     
@@ -506,7 +506,7 @@ void process_EX(bool forwardingEnabled){
         }
         ALUinput1 = writeData;
     } else {
-        printf("unrecognized fowardA signal : %d", forwardA);
+        printf("unrecognized fowardA signal : %d\n", forwardA);
     }
     
     // 3 to 1 MUX
@@ -524,7 +524,7 @@ void process_EX(bool forwardingEnabled){
         }
         ALUinput2 = writeData;
     } else {
-        printf("unrecognized fowardB signal : %d", forwardB);
+        printf("unrecognized fowardB signal : %d\n", forwardB);
     }
     
     // transfer data2
@@ -670,7 +670,7 @@ uint32_t ALU(int control_line, uint32_t data1, uint32_t data2) {
         return !(data1-data2);
     }
     else {
-        printf("Error in ALU. ALU control line value is : %d", control_line);
+        printf("Error in ALU. ALU control line value is : %d\n", control_line);
     }
     return 0;
 }
