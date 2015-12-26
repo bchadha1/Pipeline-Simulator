@@ -27,6 +27,7 @@ mem_region_t MEM_REGIONS[] = {
 CPU_State CURRENT_STATE;
 int RUN_BIT;		/* run bit */
 int INSTRUCTION_COUNT;
+int CYCLE_COUNT;
 
 /***************************************************************/
 /* CPU State info.                                             */
@@ -178,17 +179,17 @@ void mem_write_32(uint32_t address, uint32_t value)
 /***************************************************************/
 void cycle(bool forwardingEnabled, bool branchPredictionEnabled) {
     process_instruction(forwardingEnabled, branchPredictionEnabled);
-    INSTRUCTION_COUNT++;
+    CYCLE_COUNT++;
 }
 
 /***************************************************************/
 /*                                                             */
 /* Procedure : run n                                           */
 /*                                                             */
-/* Purpose   : Simulate MIPS for n cycles                      */
+/* Purpose   : Simulate MIPS for n instructions                */
 /*                                                             */
 /***************************************************************/
-void run(int num_cycles, bool forwardingEnabled, bool branchPredictionEnabled) {
+void run(int num_inst, bool forwardingEnabled, bool branchPredictionEnabled) {
     int i;
     
     if (RUN_BIT == FALSE) {
@@ -196,8 +197,8 @@ void run(int num_cycles, bool forwardingEnabled, bool branchPredictionEnabled) {
         return;
     }
     
-    printf("Simulating for %d cycles...\n\n", num_cycles);
-    for (i = 0; i < num_cycles; i++) {
+    printf("Simulating for %d cycles...\n\n", CYCLE_COUNT);
+    for (INSTRUCTION_COUNT = 0; i < num_inst;) {
         if (RUN_BIT == FALSE) {
             printf("Simulator halted\n\n");
             break;
@@ -256,7 +257,7 @@ void rdump() {
     
     printf("Current register values :\n");
     printf("-------------------------------------\n");
-    printf("PC: 0x%08x\n", CURRENT_STATE.PC);
+    printf("PC: 0x%08x\n", CURRENT_STATE.PC+4);       // adjusted
     printf("Registers:\n");
     for (k = 0; k < MIPS_REGS; k++)
         printf("R%d: 0x%08x\n", k, CURRENT_STATE.REGS[k]);
@@ -275,9 +276,10 @@ void pdump() {
     
     printf("Current pipeline PC state :\n");
     printf("-------------------------------------\n");
-    printf("CYCLE %d:", INSTRUCTION_COUNT );
+    printf("CYCLE %d:", CYCLE_COUNT );
     
-    if(CURRENT_STATE.PC) printf("0x%08x", CURRENT_STATE.PC);
+    if(CURRENT_STATE.PC && (!stall_ID_EX_count) && (!stall_IF_ID_count))
+        printf("0x%08x", CURRENT_STATE.PC);
     else printf("          ");
     printf("|");
     if(CURRENT_STATE.IF_ID_pipeline.CURRENTPC) printf("0x%08x", CURRENT_STATE.IF_ID_pipeline.CURRENTPC);

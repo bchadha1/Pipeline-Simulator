@@ -179,6 +179,8 @@ extern mem_region_t MEM_REGIONS[2];
 /* For Execution */
 extern int RUN_BIT;	/* run bit */
 extern int INSTRUCTION_COUNT;
+extern int CYCLE_COUNT;
+
 
 /* Functions */
 char**		str_split(char *a_str, const char a_delim);

@@ -173,10 +173,10 @@ int main(int argc, char *argv[]) {
     }
     if(num_inst_set) i = num_inst;
     
-    if(debug_set){
-        printf("Simulating for %d cycles...\n\n", i);
+    if(debug_set | pipe_dump_set){
+        printf("Simulating for %d instructions...\n\n", i);
         
-        for(; i > 0; i--){
+        for(INSTRUCTION_COUNT = 0; INSTRUCTION_COUNT < i;){
             if (RUN_BIT == FALSE){
                 printf("Simulator halted\n\n");
                 break;
@@ -184,9 +184,10 @@ int main(int argc, char *argv[]) {
             cycle(forwardingEnabled, branchPredictionEnabled);
             
             if(pipe_dump_set) pdump();
-            rdump();	
+            if(debug_set) rdump();
             if(mem_dump_set) mdump(addr1, addr2);
         }
+        if(!debug_set) rdump();
     }
     else{
         run(i, forwardingEnabled, branchPredictionEnabled);
@@ -194,6 +195,8 @@ int main(int argc, char *argv[]) {
         
         if(mem_dump_set) mdump(addr1, addr2);
     }
+    if(num_inst_set) printf("Simulator halted\n\n");
+    
     
     return 0;
 }

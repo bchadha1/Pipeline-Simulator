@@ -529,6 +529,9 @@ void process_MEM(bool forwardingEnabled, bool branchPredictionEnabled){
 
 void process_WB(){
     MEM_WB prevMEM_WB_pipeline = CURRENT_STATE.MEM_WB_pipeline;
+    if (prevMEM_WB_pipeline.instr_debug) { // not no-op
+        INSTRUCTION_COUNT++;
+    }
     
     // MUX for which data to write.
     uint32_t writeData;
