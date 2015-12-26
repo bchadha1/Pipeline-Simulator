@@ -12,7 +12,7 @@
 #include "util.h"
 #include "run.h"
 
-int IsDebug = 0; // for printing debugging outputs
+int IsDebug = 1; // for printing debugging outputs
 
 /***************************************************************/
 /*                                                             */
@@ -37,10 +37,13 @@ void process_instruction(bool forwardingEnabled, bool branchPredictionEnabled){
     
     // buffer -> Current CPU state
     if(PC_jump){
+        if (IsDebug) printf("PC jump has value : 0x%08x\n", PC_jump);
         CURRENT_STATE.PC = PC_jump;
         PC_jump = 0;
+    } else {
+        if(!stall_ID_EX_count) CURRENT_STATE.PC = PC_buffer;
     }
-    if(!stall_ID_EX_count && !stall_IF_ID_count) CURRENT_STATE.PC = PC_buffer;
+    
     if(!stall_ID_EX_count) CURRENT_STATE.IF_ID_pipeline = IF_ID_pipeline_buffer;
     
     CURRENT_STATE.ID_EX_pipeline = ID_EX_pipeline_buffer;
@@ -52,8 +55,7 @@ void process_instruction(bool forwardingEnabled, bool branchPredictionEnabled){
     if(stall_ID_EX_count) flush_ID_EX();
     
     if(branchFlush){
-        //printf("LOOK HERE@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-        //printf("branchFlush is activated. Flushing IF/ID, ID/EX, EX/MEM... \n");
+        if (IsDebug) printf("branchFlush is activated. Flushing IF/ID, ID/EX, EX/MEM... \n");
         flush_IF_ID();
         flush_ID_EX();
         flush_EX_MEM();
@@ -244,6 +246,10 @@ void generate_control_signals(uint32_t instr, bool forwardingEnabled, bool branc
         ID_EX_pipeline_buffer.MEM_MemWrite = 0;
         ID_EX_pipeline_buffer.WB_RegWrite = 0;
         if(!branchPredictionEnabled) stall_IF_ID_count = 3+1;
+        else {
+            stall_IF_ID_count = 1+1;
+            PC_buffer = CURRENT_STATE.IF_ID_pipeline.NPC + (IMM(instr) << 2);
+        }
         
     } else if (OPCODE(instr) == 0x5){           // bne
         ID_EX_pipeline_buffer.ALUControl = 11;
@@ -253,6 +259,10 @@ void generate_control_signals(uint32_t instr, bool forwardingEnabled, bool branc
         ID_EX_pipeline_buffer.MEM_MemWrite = 0;
         ID_EX_pipeline_buffer.WB_RegWrite = 0;
         if(!branchPredictionEnabled) stall_IF_ID_count = 3+1;
+        else {
+            stall_IF_ID_count = 1+1;
+            PC_buffer = CURRENT_STATE.IF_ID_pipeline.NPC + (IMM(instr) << 2);
+        }
         
     } else if (OPCODE(instr) == 0x9){           // addiu
         ID_EX_pipeline_buffer.RegDst = 0;
@@ -380,30 +390,6 @@ void generate_control_signals(uint32_t instr, bool forwardingEnabled, bool branc
                 }
             }
         }
-        
-        
-        // original
-        /*
-        if (CURRENT_STATE.MEM_WB_pipeline.RegWrite) {
-            if (CURRENT_STATE.MEM_WB_pipeline.RegDstNum != 0) {
-                if (!(CURRENT_STATE.EX_MEM_pipeline.WB_RegWrite && (CURRENT_STATE.EX_MEM_pipeline.RegDstNum !=0) && (CURRENT_STATE.EX_MEM_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.RS))) {
-                    
-                    if (CURRENT_STATE.MEM_WB_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.RS) {
-                        if(IsDebug) printf("generate_control signal : MEM Hazard detected!!!!! \n");
-                        stall_IF_ID_count = 1+2;
-                    }
-                }
-                
-                if (!(CURRENT_STATE.EX_MEM_pipeline.WB_RegWrite && (CURRENT_STATE.EX_MEM_pipeline.RegDstNum !=0) && (CURRENT_STATE.EX_MEM_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.RT))) {
-                    
-                    if (CURRENT_STATE.MEM_WB_pipeline.RegDstNum == CURRENT_STATE.ID_EX_pipeline.RT) {
-                        if(IsDebug) printf("generate_control signal : MEM Hazard detected!!!!! \n");
-                        stall_IF_ID_count = 1+2;
-                    }
-                }
-            }
-        }
-         */
     }
     
     
@@ -586,7 +572,10 @@ void process_MEM(bool forwardingEnabled, bool branchPredictionEnabled){
     if(prevEX_MEM_pipeline.Branch) { // branch condition
         if(prevEX_MEM_pipeline.zero){
             PC_jump = prevEX_MEM_pipeline.NPC;
+        } else {
+            if (IsDebug) printf("Branch prediction failed!!!!\n");
             if(branchPredictionEnabled) branchFlush = true;
+            PC_buffer = prevEX_MEM_pipeline.CURRENTPC+4;
         }
     }
     
