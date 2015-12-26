@@ -33,12 +33,12 @@
 
 
 // instruction information extracting macros
-#define FUNCT(INST)     (INST & 0x0000001F)
-#define SHAMT(INST)     (INST & 0x000007C0)>>5
-#define RD(INST)        (INST & 0x0000F800)>>10
-#define RT(INST)        (INST & 0x001F0000)>>15
-#define RS(INST)        (INST & 0x03E00000)>>20
-#define OPCODE(INST)    (INST & 0xFC000000)>>25
+#define FUNCT(INST)     (INST & 0x0000003F)
+#define SHAMT(INST)     (INST & 0x000007C0)>>6
+#define RD(INST)        (INST & 0x0000F800)>>11
+#define RT(INST)        (INST & 0x001F0000)>>16
+#define RS(INST)        (INST & 0x03E00000)>>21
+#define OPCODE(INST)    (INST & 0xFC000000)>>26
 #define IMM(INST)       (INST & 0x0000FFFF)
 #define J250(INST)      (INST & 0x03FFFFFF)
 
@@ -48,6 +48,7 @@
 typedef struct IF_ID_Struct {
     // PC
     uint32_t NPC;
+    uint32_t CURRENTPC;
     
     // reg
     uint32_t instr;
@@ -58,6 +59,7 @@ typedef struct IF_ID_Struct {
 typedef struct ID_EX_Struct {
     // PC
     uint32_t NPC;
+    uint32_t CURRENTPC;
     
     // Control Signals
     bool WB_MemToReg;   // WB
@@ -75,18 +77,23 @@ typedef struct ID_EX_Struct {
     
     
     // reg
-    uint32_t REG1;      // rs
-    uint32_t REG2;      // rt
-    uint32_t IMM; // immediate value
+    uint32_t REG1;      // Reg[rs]
+    uint32_t REG2;      // Reg[rt]
+    uint32_t IMM; 		// immediate value
     
-    uint32_t inst16_20;
-    uint32_t inst11_15;
+    uint32_t RS;		// rs, inst[21:25]
+    uint32_t RT;		// rt, inst[16:20]
+    uint32_t RD;		// rd, inst[11:15]
+    uint32_t SHAMT;     // shamt, inst[6:10]
+    
+    uint32_t instr_debug;
     
 } ID_EX;
 
 typedef struct EX_MEM_Struct {
     // PC
     uint32_t NPC;       // branch target address
+    uint32_t CURRENTPC;
     
     // Control signals
     bool WB_MemToReg; // WB
@@ -103,12 +110,13 @@ typedef struct EX_MEM_Struct {
     uint32_t ALU_OUT;
     uint32_t data2;             // untouched data2 from register.
     uint32_t RegDstNum;         // 5 bit Register destination (if write)
-    
+    uint32_t instr_debug;
 } EX_MEM;
 
 typedef struct MEM_WB_Struct {
     // PC
-    uint32_t NPC; 
+    uint32_t NPC;
+    uint32_t CURRENTPC;
     
     // Control signals
     bool MemRead;
@@ -120,7 +128,7 @@ typedef struct MEM_WB_Struct {
     uint32_t ALU_OUT;
     
     uint32_t RegDstNum;         // 5 bit Register destination (if write)
-    
+    uint32_t instr_debug;
 } MEM_WB;
 
 
@@ -148,21 +156,25 @@ typedef struct {
 extern CPU_State CURRENT_STATE;
 
 /* Pipelines */
-extern IF_ID IF_ID_pipeline_buffer;
-extern ID_EX ID_EX_pipeline_buffer;
-extern EX_MEM EX_MEM_pipeline_buffer;
-extern MEM_WB MEM_WB_pipeline_buffer;
-extern bool globaljump;
-extern bool globaljal;
-extern bool globalJumpAndReturn;
-extern uint32_t PC_buffer;
-extern int stallcount;
-extern int stallcount2;
+IF_ID IF_ID_pipeline_buffer;
+ID_EX ID_EX_pipeline_buffer;
+EX_MEM EX_MEM_pipeline_buffer;
+MEM_WB MEM_WB_pipeline_buffer;
+bool globaljump;
+bool globaljal;
+bool globalJumpAndReturn;
+bool branchFlush;
+bool reachedEnd;
+uint32_t PC_buffer;
+uint32_t PC_jump;
+int stall_IF_ID_count; // stall count for stalling IF stage only
+int stall_ID_EX_count; // stall count for stalling IF, ID stages
 
 
 /* For Instructions */
 extern uint32_t *INST_INFO;
 extern int NUM_INST;
+extern int TEXT_SIZE;
 
 /* For Memory Regions */
 extern mem_region_t MEM_REGIONS[2];
@@ -170,20 +182,32 @@ extern mem_region_t MEM_REGIONS[2];
 /* For Execution */
 extern int RUN_BIT;	/* run bit */
 extern int INSTRUCTION_COUNT;
+extern int CYCLE_COUNT;
+
 
 /* Functions */
 char**		str_split(char *a_str, const char a_delim);
 int		fromBinary(char *s);
 uint32_t	mem_read_32(uint32_t address);
 void		mem_write_32(uint32_t address, uint32_t value);
-void		cycle(bool forwardingEnabled);
-void		run(int num_cycles, bool forwardingEnabled);
-void		go(bool forwardingEnabled);
+void		cycle(bool forwardingEnabled, bool branchPredictionEnabled);
+void		run(int num_cycles, bool forwardingEnabled, bool branchPredictionEnabled);
+void		go(bool forwardingEnabled, bool branchPredictionEnabled);
 void		mdump(int start, int stop);
 void		rdump();
 void        pdump();
 void		init_memory();
 void		init_inst_info();
+
+extern void process_instruction(bool forwardingEnabled, bool branchPredictionEnabled);
+
+/* flush functions */
+void flush_IF_ID();
+void flush_ID_EX();
+void flush_EX_MEM();
+
+
+
 
 
 #endif
